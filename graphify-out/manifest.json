@@ -1,0 +1,116 @@
+{
+  "components.json": {
+    "mtime": 1793103828.9262466,
+    "seen": 1793103850.8490956,
+    "ast_hash": "c406f51c5fd4fda444a8aa913e846bb6",
+    "semantic_hash": ""
+  },
+  "eslint.config.mjs": {
+    "mtime": 1793092372.8973248,
+    "seen": 1793103850.8490999,
+    "ast_hash": "dfa1f5f6a7037bf39dc510f30b180002",
+    "semantic_hash": ""
+  },
+  "next.config.ts": {
+    "mtime": 1793092797.591088,
+    "seen": 1793103850.849102,
+    "ast_hash": "8bfc024490e5b4c0d41a019749c839ef",
+    "semantic_hash": ""
+  },
+  "package.json": {
+    "mtime": 1793092913.3330858,
+    "seen": 1793103850.8491032,
+    "ast_hash": "ca726b8f83f1a08da3385928571b05a4",
+    "semantic_hash": ""
+  },
+  "src/app/layout.tsx": {
+    "mtime": 1793092913.706477,
+    "seen": 1793103850.8491042,
+    "ast_hash": "d0f950e02c55e055115a3d5bd1289277",
+    "semantic_hash": ""
+  },
+  "src/app/page.tsx": {
+    "mtime": 1793092373.0054116,
+    "seen": 1793103850.8491051,
+    "ast_hash": "7960d56e7fc48ecd789e2fd32155fa90",
+    "semantic_hash": ""
+  },
+  "src/components/ui/button.tsx": {
+    "mtime": 1793092913.8639297,
+    "seen": 1793103850.849106,
+    "ast_hash": "10a7de85acec76c9cc10a843c45f8de1",
+    "semantic_hash": ""
+  },
+  "src/components/ui/card.tsx": {
+    "mtime": 1793092920.992336,
+    "seen": 1793103850.849107,
+    "ast_hash": "842ec9dbbbea91cf4aaf4f96c6a51d66",
+    "semantic_hash": ""
+  },
+  "src/components/ui/dialog.tsx": {
+    "mtime": 1793092921.0092194,
+    "seen": 1793103850.849108,
+    "ast_hash": "95247bb9226749ad9f8668fe31159bf4",
+    "semantic_hash": ""
+  },
+  "src/components/ui/input.tsx": {
+    "mtime": 1793092920.9946527,
+    "seen": 1793103850.8491087,
+    "ast_hash": "3482721a3f17f1d01d82d8ae765bbba6",
+    "semantic_hash": ""
+  },
+  "src/lib/utils.ts": {
+    "mtime": 1793092913.8659475,
+    "seen": 1793103850.8491094,
+    "ast_hash": "0482d21cfeab8cfcfe44f94927e45afb",
+    "semantic_hash": ""
+  },
+  "tsconfig.json": {
+    "mtime": 1793103828.899386,
+    "seen": 1793103850.8491106,
+    "ast_hash": "ee17fd1c97c735e9f3564e3f5251f125",
+    "semantic_hash": ""
+  },
+  "AGENTS.md": {
+    "mtime": 1793092840.4876904,
+    "seen": 1793103850.8491113,
+    "ast_hash": "c98dbebb744eadc1acc4b9f58bfe0f42",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1793103828.9504201,
+    "seen": 1793103850.8491123,
+    "ast_hash": "da8bcdcf30919aa37fdc9bd8bba7e6cd",
+    "semantic_hash": ""
+  },
+  "public/file.svg": {
+    "mtime": 1793092372.9231079,
+    "seen": 1793103850.849113,
+    "ast_hash": "d09f95206c3fa0bb9bd9fefabfd0ea71",
+    "semantic_hash": ""
+  },
+  "public/globe.svg": {
+    "mtime": 1793092372.9328973,
+    "seen": 1793103850.8491142,
+    "ast_hash": "2aaafa6a49b6563925fe440891e32717",
+    "semantic_hash": ""
+  },
+  "public/next.svg": {
+    "mtime": 1793092372.9415166,
+    "seen": 1793103850.8491151,
+    "ast_hash": "8e061864f388b47f33a1c3780831193e",
+    "semantic_hash": ""
+  },
+  "public/vercel.svg": {
+    "mtime": 1793092372.949147,
+    "seen": 1793103850.8491158,
+    "ast_hash": "c0af2f507b369b085b35ef4bbe3bcf1e",
+    "semantic_hash": ""
+  },
+  "public/window.svg": {
+    "mtime": 1793092372.9574318,
+    "seen": 1793103850.8491166,
+    "ast_hash": "a2760511c65806022ad20adf74370ff3",
+    "semantic_hash": ""
+  }
+}

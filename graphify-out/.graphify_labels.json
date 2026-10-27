@@ -1,0 +1,14 @@
+{
+  "0": "compilerOptions",
+  "1": "package.json",
+  "2": "dialog.tsx",
+  "3": "components.json",
+  "4": "layout.tsx",
+  "5": "card.tsx",
+  "6": "dependencies",
+  "7": "devDependencies",
+  "8": "tailwind",
+  "9": "scripts",
+  "10": "README.md",
+  "11": "AGENTS.md"
+}
