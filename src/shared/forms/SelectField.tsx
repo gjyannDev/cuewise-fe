@@ -95,6 +95,8 @@ export function SelectField<TFieldValues extends FieldValues>({
           const trigger = (
             <SelectTrigger
               id={id}
+              ref={field.ref}
+              aria-invalid={!!error}
               className={`${triggerCls} cursor-pointer [&>svg]:opacity-100 [&>svg]:text-gray-700`}
               style={{ minWidth: 0 }}
             >
