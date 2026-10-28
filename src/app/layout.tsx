@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { inter, roboto_slab } from "@/lib/font";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   title: "Cuewise",
@@ -13,7 +15,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${inter.variable} ${roboto_slab.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <Providers>
+          <TooltipProvider>{children}</TooltipProvider>
+        </Providers>
+      </body>
     </html>
   );
 }
