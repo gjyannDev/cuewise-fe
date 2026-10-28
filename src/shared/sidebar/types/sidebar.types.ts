@@ -9,9 +9,10 @@ export type NavItem = {
   exact?: boolean;
 };
 
-/** A visually separated group of items (e.g. main, secondary). */
+/** A group of items under its own header (e.g. "Menu", "Account"). */
 export type NavSection = {
   key: string;
+  label: string;
   items: NavItem[];
 };
 

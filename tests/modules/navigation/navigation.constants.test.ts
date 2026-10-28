@@ -52,6 +52,13 @@ describe("SIDEBAR_BY_ROLE", () => {
     }
   });
 
+  it.each(roleSchema.options)("%s: every section has a header label", (role) => {
+    expect(SIDEBAR_BY_ROLE[role].sections.map((section) => section.label)).toEqual([
+      "Menu",
+      "Account",
+    ]);
+  });
+
   it("keeps every admin item under /admin, with no user paths (EC6)", () => {
     for (const item of allItems("admin")) {
       expect(item.href === "/admin" || item.href.startsWith("/admin/")).toBe(true);

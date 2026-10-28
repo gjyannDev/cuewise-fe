@@ -13,7 +13,7 @@ import type { SidebarConfig } from "@/shared/sidebar/types/sidebar.types";
 
 /**
  * Sidebar contents per role. Edit these lists to add, remove, rename, reorder or re-icon items;
- * each section is rendered as its own group with a separator between them.
+ * each section is rendered as its own group under its `label` header.
  */
 const APP_NAME = "Cuewise";
 
@@ -22,6 +22,7 @@ const USER_SIDEBAR: SidebarConfig = {
   sections: [
     {
       key: "main",
+      label: "Menu",
       items: [
         { key: "dashboard", title: "Dashboard", href: "/", icon: LayoutDashboard },
         { key: "interviews", title: "AI Mock Interview", href: "/interviews", icon: MessagesSquare },
@@ -31,6 +32,7 @@ const USER_SIDEBAR: SidebarConfig = {
     },
     {
       key: "secondary",
+      label: "Account",
       items: [{ key: "settings", title: "Settings", href: "/settings", icon: Settings }],
     },
   ],
@@ -41,6 +43,7 @@ const ADMIN_SIDEBAR: SidebarConfig = {
   sections: [
     {
       key: "main",
+      label: "Menu",
       items: [
         { key: "dashboard", title: "Dashboard", href: "/admin", icon: LayoutDashboard, exact: true },
         { key: "users", title: "Users", href: "/admin/users", icon: Users },
@@ -49,6 +52,7 @@ const ADMIN_SIDEBAR: SidebarConfig = {
     },
     {
       key: "secondary",
+      label: "Account",
       items: [{ key: "settings", title: "Settings", href: "/admin/settings", icon: Settings }],
     },
   ],

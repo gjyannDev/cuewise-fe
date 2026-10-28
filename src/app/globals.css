@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+/* shadcn's variants (data-active, data-open, ...) treat data-x="false" as off, plus no-scrollbar etc. */
+@import "shadcn/tailwind.css";
 
 /* Enables dark: variants and the .dark class toggle */
 @custom-variant dark (&:is(.dark *));
