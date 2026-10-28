@@ -1,0 +1,19 @@
+{
+  "0": "compilerOptions",
+  "1": "package.json",
+  "2": "api.helper.ts",
+  "3": "components.json",
+  "4": "backend.client.server.ts",
+  "5": "Implementation Steps",
+  "6": "dependencies",
+  "7": "AuthForm.tsx",
+  "8": "field.tsx",
+  "9": "app/layout.tsx",
+  "10": "README.md",
+  "11": "AGENTS.md",
+  "12": "auth.routes.test.ts",
+  "13": "Implementation: Auth Session (cookie-based BFF)",
+  "14": "Cuewise FE — Project Instructions",
+  "15": "Feature: Auth Session (cookie-based, Next.js as backend-for-frontend)",
+  "16": "AuthCard.tsx"
+}
