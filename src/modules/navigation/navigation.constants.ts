@@ -24,16 +24,24 @@ const USER_SIDEBAR: SidebarConfig = {
       key: "main",
       label: "Menu",
       items: [
-        { key: "dashboard", title: "Dashboard", href: "/", icon: LayoutDashboard },
-        { key: "interviews", title: "AI Mock Interview", href: "/interviews", icon: MessagesSquare },
-        { key: "history", title: "History", href: "/history", icon: History },
-        { key: "progress", title: "Progress", href: "/progress", icon: BarChart3 },
+        { key: "dashboard", title: "Dashboard", href: "/", icon: LayoutDashboard, description: "Your practice at a glance." },
+        {
+          key: "interviews",
+          title: "AI Mock Interview",
+          href: "/interviews",
+          icon: MessagesSquare,
+          description: "Practice with questions matched to your role and level.",
+        },
+        { key: "history", title: "History", href: "/history", icon: History, description: "Your past interviews." },
+        { key: "progress", title: "Progress", href: "/progress", icon: BarChart3, description: "How your answers are improving." },
       ],
     },
     {
       key: "secondary",
       label: "Account",
-      items: [{ key: "settings", title: "Settings", href: "/settings", icon: Settings }],
+      items: [
+        { key: "settings", title: "Settings", href: "/settings", icon: Settings, description: "Manage your account." },
+      ],
     },
   ],
 };

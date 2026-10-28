@@ -5,6 +5,8 @@ export type NavItem = {
   title: string;
   href: string;
   icon: LucideIcon;
+  /** One line under the page title in the shell header. */
+  description?: string;
   /** Only active on exactly this path, not on nested pages (for landing pages like `/admin`). */
   exact?: boolean;
 };

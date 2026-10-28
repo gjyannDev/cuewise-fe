@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { SessionExpiredError } from "@/lib/config/backend.client.server";
 import { getCurrentUser } from "@/modules/auth/session/current-user.server";
 import type { CurrentUserProfile } from "@/modules/auth/types/auth.types";
+import { RoleHeaderTitle } from "@/modules/navigation/components/RoleHeaderTitle";
 import { RoleSidebar } from "@/modules/navigation/components/RoleSidebar";
 import { AppShell } from "@/shared/sidebar/AppShell";
 
@@ -22,7 +23,10 @@ export async function AuthedShell({ children }: AuthedShellProps) {
   }
 
   return (
-    <AppShell sidebar={<RoleSidebar user={{ email: user.email, role: user.role }} />}>
+    <AppShell
+      sidebar={<RoleSidebar user={{ email: user.email, role: user.role }} />}
+      title={<RoleHeaderTitle role={user.role} />}
+    >
       {children}
     </AppShell>
   );

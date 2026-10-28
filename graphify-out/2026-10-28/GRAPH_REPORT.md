@@ -1,13 +1,13 @@
 # Graph Report - cuewise-fe  (2026-10-28)
 
 ## Corpus Check
-- 140 files · ~42,776 words
+- 141 files · ~43,090 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 3 file(s) not represented in the graph (top: .example 1, (none) 1, .css 1)
 
 ## Summary
-- 800 nodes · 1993 edges · 27 communities (26 shown, 1 thin omitted)
-- Extraction: 90% EXTRACTED · 10% INFERRED · 0% AMBIGUOUS · INFERRED: 195 edges (avg confidence: 0.95)
+- 803 nodes · 2017 edges · 29 communities (28 shown, 1 thin omitted)
+- Extraction: 90% EXTRACTED · 10% INFERRED · 0% AMBIGUOUS · INFERRED: 198 edges (avg confidence: 0.95)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
@@ -25,40 +25,40 @@
 - dependencies
 - InterviewConfigForm.tsx
 - react
-- Implementation: App Sidebar (shared shell for user and admin)
+- current-user.server.ts
 - README.md
 - AGENTS.md
 - sidebar.tsx
 - Implementation: Auth Session (cookie-based BFF)
 - useMutationCallbacks
+- auth.types.ts
+- Cuewise FE — Project Instructions
+- avatar.tsx
 - next
-- dialog.tsx
+- Implementation Plan: Interviews Setup UI (foundation)
 - Feature: App Sidebar (shared shell for user and admin)
-- Feature: Interviews Setup UI (foundation)
 - Implementation: Interviews Setup UI (foundation)
 - vitest
 - AuthForm
 - Feature: Auth Session (cookie-based, Next.js as backend-for-frontend)
-- auth.types.ts
+- RoleSidebar.tsx
 - devDependencies
 - scripts
 - eslint.config.mjs
 
 ## God Nodes (most connected - your core abstractions)
-1. `react` - 44 edges
+1. `react` - 45 edges
 2. `Implementation Steps` - 31 edges
 3. `Button()` - 24 edges
 4. `useMutationCallbacks()` - 24 edges
 5. `cn` - 22 edges
-6. `Implementation Steps` - 21 edges
-7. `next` - 20 edges
-8. `Card()` - 20 edges
-9. `InterviewConfigForm()` - 20 edges
-10. `AuthForm()` - 19 edges
+6. `Card()` - 22 edges
+7. `InterviewConfigForm()` - 21 edges
+8. `Implementation Steps` - 21 edges
+9. `next` - 20 edges
+10. `lucide-react` - 19 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `Known Issues` --references--> `SidebarProvider()`  [INFERRED]
-  docs/features/app-sidebar/task.md → src/components/ui/sidebar.tsx
 - `Architecture: Modular, Feature-Driven` --references--> `useMutationCallbacks()`  [INFERRED]
   CLAUDE.md → src/hooks/use-mutation-callback.ts
 - `Skills Consulted` --references--> `useMutationCallbacks()`  [INFERRED]
@@ -67,11 +67,13 @@
   docs/features/auth-session/spec.md → src/hooks/use-mutation-callback.ts
 - `Project Conventions` --references--> `useMutationCallbacks()`  [INFERRED]
   docs/features/interviews-setup-ui/spec.md → src/hooks/use-mutation-callback.ts
+- `Implementation Steps` --references--> `normalizeError()`  [INFERRED]
+  docs/features/auth-session/plan.md → src/lib/config/api.helper.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (27 total, 1 thin omitted)
+## Communities (29 total, 1 thin omitted)
 
 ### Community 0 - "compilerOptions"
 Cohesion: 0.10
@@ -79,11 +81,11 @@ Nodes (19): compilerOptions, allowJs, esModuleInterop, incremental, isolatedModu
 
 ### Community 1 - "package.json"
 Cohesion: 0.12
-Nodes (15): name, private, version, next-themes, react-dom, shadcn, sonner, tailwindcss (+7 more)
+Nodes (16): name, private, version, @hookform/resolvers, next-themes, react-dom, shadcn, sonner (+8 more)
 
 ### Community 2 - "auth-session.ts"
-Cohesion: 0.14
-Nodes (26): Project Conventions, ACCESS_TOKEN_COOKIE, canRoleAccessRoute(), getRoleLandingRoute(), isPublicAuthRoute(), isTokenExpired(), isUnder(), normalizePath() (+18 more)
+Cohesion: 0.07
+Nodes (44): Project Conventions, Testing Strategy, Acceptance Criteria, Blockers, Constraints, Edge Cases, Feature: Interviews Setup UI (foundation), Functional (+36 more)
 
 ### Community 3 - "components.json"
 Cohesion: 0.09
@@ -91,11 +93,11 @@ Nodes (21): aliases, components, hooks, lib, ui, utils, iconLibrary, menuAccent 
 
 ### Community 4 - "api.helper.ts"
 Cohesion: 0.05
-Nodes (62): Affected Files & Patterns, Architecture & Design, Blockers & Resolutions, Implementation Plan: App Sidebar (shared shell for user and admin), Implementation Steps, Overview, Project Rules Applied, Ready to Implement (+54 more)
+Nodes (51): Test Results, axios, ref_server_only, POST(), POST(), forward(), ForwardContext, OWNED_BY_NEXT (+43 more)
 
 ### Community 5 - "Implementation Steps"
-Cohesion: 0.24
-Nodes (16): Implementation Steps, Acceptance Criteria, Functional, Project Conventions, FieldGroup(), FieldSet(), Toaster(), authKeys (+8 more)
+Cohesion: 0.29
+Nodes (13): Implementation Steps, Acceptance Criteria, Functional, Project Conventions, FieldGroup(), FieldSet(), Toaster(), useCurrentProfileQuery() (+5 more)
 
 ### Community 6 - "dependencies"
 Cohesion: 0.11
@@ -103,67 +105,75 @@ Nodes (18): dependencies, axios, class-variance-authority, cn, @hookform/resolve
 
 ### Community 7 - "InterviewConfigForm.tsx"
 Cohesion: 0.05
-Nodes (84): Deviations During Implementation, Implementation Steps, Layout & UX Design, InterviewsContainer(), handleStart(), InterviewsContainerProps, InterviewsContent(), InterviewsPage() (+76 more)
+Nodes (89): Deviations During Implementation, Implementation Steps, Layout & UX Design, Deviations from Plan, lucide-react, zod, InterviewsContainer(), handleStart() (+81 more)
 
 ### Community 8 - "react"
-Cohesion: 0.05
-Nodes (62): Architecture & Design, Blockers & Resolutions, Implementation Plan: Interviews Setup UI (foundation), Overview, Ready to Implement, Skills Consulted, Spec Requirements -> Implementation, Testing Strategy (+54 more)
+Cohesion: 0.06
+Nodes (52): cn, radix-ui, react, react-hook-form, badgeVariants, Checkbox(), Field(), FieldDescription() (+44 more)
 
-### Community 9 - "Implementation: App Sidebar (shared shell for user and admin)"
-Cohesion: 0.15
-Nodes (12): Baseline Failures, Changes Made (uncommitted, for the user to review), Implementation: App Sidebar (shared shell for user and admin), Known Issues, Links, Open Questions, Skills Consulted During Implementation, Status (+4 more)
+### Community 9 - "current-user.server.ts"
+Cohesion: 0.06
+Nodes (44): Affected Files & Patterns, Architecture & Design, Blockers & Resolutions, Implementation Plan: App Sidebar (shared shell for user and admin), Implementation Steps, Overview, Project Rules Applied, Ready to Implement (+36 more)
 
 ### Community 10 - "README.md"
 Cohesion: 0.50
 Nodes (3): Deploy on Vercel, Getting Started, Learn More
 
 ### Community 12 - "sidebar.tsx"
-Cohesion: 0.05
-Nodes (53): Avatar(), AvatarFallback(), Input(), Sheet(), SheetContent(), SheetDescription(), SheetHeader(), SheetOverlay() (+45 more)
+Cohesion: 0.06
+Nodes (54): class-variance-authority, Button(), buttonVariants, Dialog(), DialogClose(), DialogContent(), DialogDescription(), DialogFooter() (+46 more)
 
 ### Community 13 - "Implementation: Auth Session (cookie-based BFF)"
-Cohesion: 0.15
-Nodes (12): Baseline Failures, Changes Made, Deviations from Plan, Implementation: Auth Session (cookie-based BFF), Links, Not verified automatically (manual browser check by the user), Open Questions, Skills Consulted During Implementation (+4 more)
+Cohesion: 0.17
+Nodes (11): Baseline Failures, Changes Made, Deviations from Plan, Implementation: Auth Session (cookie-based BFF), Links, Not verified automatically (manual browser check by the user), Open Questions, Skills Consulted During Implementation (+3 more)
 
 ### Community 14 - "useMutationCallbacks"
-Cohesion: 0.21
-Nodes (16): Completed Steps, Affected Files & Patterns, AuthFormContainer(), handleSubmit(), AuthFormContainerProps, ERROR_TITLES, ActionMode, BuildCallbackEffects (+8 more)
+Cohesion: 0.18
+Nodes (19): Data Fetching (TanStack Query), Deviations recorded during /implement, Completed Steps, Affected Files & Patterns, Project Rules Applied, AuthFormContainer(), handleSubmit(), ActionMode (+11 more)
+
+### Community 15 - "auth.types.ts"
+Cohesion: 0.19
+Nodes (13): AuthFormProps, FORM_FIELDS, SUBMIT_LABELS, AuthFormContainerProps, ERROR_TITLES, authKeys, AuthCredentials, AuthFormMode (+5 more)
+
+### Community 16 - "Cuewise FE — Project Instructions"
+Cohesion: 0.14
+Nodes (13): About the Project, AI Features (UI side), Architecture: Modular, Feature-Driven, Common Commands, Components, Cuewise FE — Project Instructions, Don'ts, Git Rules (STRICT) (+5 more)
+
+### Community 17 - "avatar.tsx"
+Cohesion: 0.24
+Nodes (5): Avatar(), AvatarFallback(), SidebarUserCard(), SidebarUserCardProps, getInitials()
 
 ### Community 18 - "next"
-Cohesion: 0.06
-Nodes (41): About the Project, AI Features (UI side), Architecture: Modular, Feature-Driven, Common Commands, Components, Cuewise FE — Project Instructions, Data Fetching (TanStack Query), Don'ts (+33 more)
+Cohesion: 0.10
+Nodes (25): nextConfig, next, @tanstack/react-query, src_app_globals, metadata, RootLayout(), Providers(), ProvidersProps (+17 more)
 
-### Community 19 - "dialog.tsx"
-Cohesion: 0.34
-Nodes (12): Dialog(), DialogClose(), DialogContent(), DialogDescription(), DialogFooter(), DialogHeader(), DialogOverlay(), DialogPortal() (+4 more)
+### Community 19 - "Implementation Plan: Interviews Setup UI (foundation)"
+Cohesion: 0.20
+Nodes (9): Architecture & Design, Blockers & Resolutions, Implementation Plan: Interviews Setup UI (foundation), Overview, Ready to Implement, Skills Consulted, Spec Requirements -> Implementation, Testing Strategy (+1 more)
 
 ### Community 20 - "Feature: App Sidebar (shared shell for user and admin)"
 Cohesion: 0.14
 Nodes (13): Acceptance Criteria, Blockers, Constraints, Edge Cases, Feature: App Sidebar (shared shell for user and admin), Functional, Goal, Non-Functional (+5 more)
 
-### Community 21 - "Feature: Interviews Setup UI (foundation)"
-Cohesion: 0.12
-Nodes (16): Testing Strategy, Acceptance Criteria, Blockers, Constraints, Edge Cases, Feature: Interviews Setup UI (foundation), Functional, Goal (+8 more)
-
 ### Community 22 - "Implementation: Interviews Setup UI (foundation)"
-Cohesion: 0.13
-Nodes (14): Baseline Failures, Changes Made, Completed Steps, Deviations from Plan, Implementation: Interviews Setup UI (foundation), Known Issues, Links, Open Questions (+6 more)
+Cohesion: 0.14
+Nodes (13): Baseline Failures, Changes Made, Completed Steps, Implementation: Interviews Setup UI (foundation), Known Issues, Links, Open Questions, Skills Consulted During Implementation (+5 more)
 
 ### Community 23 - "vitest"
-Cohesion: 0.07
-Nodes (20): axios, ref_node_url, vitest, apiClient, API, CREDENTIALS, get, post (+12 more)
+Cohesion: 0.11
+Nodes (17): ref_node_url, vitest, CREDENTIALS, get, post, PROFILE, fetchMock, axiosErrorWith() (+9 more)
 
 ### Community 25 - "AuthForm"
-Cohesion: 0.16
-Nodes (17): Forms, Affected Files & Patterns, Architecture & Design, Blockers & Resolutions, Deviations recorded at /implement start (project CLAUDE.md, added after planning), Deviations recorded during /implement, Implementation Plan: Auth Session (cookie-based BFF), Overview (+9 more)
+Cohesion: 0.18
+Nodes (16): Forms, Affected Files & Patterns, Architecture & Design, Blockers & Resolutions, Deviations recorded at /implement start (project CLAUDE.md, added after planning), Implementation Plan: Auth Session (cookie-based BFF), Overview, Project Rules Applied (+8 more)
 
 ### Community 26 - "Feature: Auth Session (cookie-based, Next.js as backend-for-frontend)"
 Cohesion: 0.17
 Nodes (11): Blockers, Constraints, Edge Cases, Error handling (what the user sees), Feature: Auth Session (cookie-based, Next.js as backend-for-frontend), Goal, Non-Functional, Out of Scope (+3 more)
 
-### Community 27 - "auth.types.ts"
-Cohesion: 0.08
-Nodes (31): @hookform/resolvers, AuthFormProps, FORM_FIELDS, SUBMIT_LABELS, SessionExpiredNotice(), SignInContent(), SignInPage(), SignInPageProps (+23 more)
+### Community 27 - "RoleSidebar.tsx"
+Cohesion: 0.23
+Nodes (7): roleSchema, Role, RoleSidebarProps, ADMIN_SIDEBAR, ROLE_LABELS, SIDEBAR_BY_ROLE, USER_SIDEBAR
 
 ### Community 28 - "devDependencies"
 Cohesion: 0.20
@@ -185,12 +195,12 @@ Nodes (3): eslintConfig, eslint, eslint-config-next
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `react` connect `react` to `package.json`, `api.helper.ts`, `InterviewConfigForm.tsx`, `sidebar.tsx`, `next`, `dialog.tsx`, `auth.types.ts`?**
-  _High betweenness centrality (0.137) - this node is a cross-community bridge._
-- **Why does `next` connect `next` to `package.json`, `auth-session.ts`, `api.helper.ts`, `InterviewConfigForm.tsx`, `sidebar.tsx`, `useMutationCallbacks`, `vitest`, `auth.types.ts`?**
+- **Why does `react` connect `react` to `package.json`, `api.helper.ts`, `InterviewConfigForm.tsx`, `current-user.server.ts`, `sidebar.tsx`, `avatar.tsx`, `next`?**
+  _High betweenness centrality (0.142) - this node is a cross-community bridge._
+- **Why does `next` connect `next` to `package.json`, `auth-session.ts`, `api.helper.ts`, `InterviewConfigForm.tsx`, `current-user.server.ts`, `sidebar.tsx`, `auth.types.ts`, `vitest`, `RoleSidebar.tsx`?**
+  _High betweenness centrality (0.078) - this node is a cross-community bridge._
+- **Why does `useMutationCallbacks()` connect `useMutationCallbacks` to `auth-session.ts`, `Implementation Steps`, `InterviewConfigForm.tsx`, `current-user.server.ts`, `auth.types.ts`, `Cuewise FE — Project Instructions`, `AuthForm`, `Feature: Auth Session (cookie-based, Next.js as backend-for-frontend)`, `RoleSidebar.tsx`?**
   _High betweenness centrality (0.076) - this node is a cross-community bridge._
-- **Why does `useMutationCallbacks()` connect `useMutationCallbacks` to `auth-session.ts`, `api.helper.ts`, `Implementation Steps`, `InterviewConfigForm.tsx`, `next`, `Feature: Interviews Setup UI (foundation)`, `AuthForm`, `Feature: Auth Session (cookie-based, Next.js as backend-for-frontend)`, `auth.types.ts`?**
-  _High betweenness centrality (0.075) - this node is a cross-community bridge._
 - **Are the 30 inferred relationships involving `Implementation Steps` (e.g. with `GET()` and `AuthForm()`) actually correct?**
   _`Implementation Steps` has 30 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 15 inferred relationships involving `useMutationCallbacks()` (e.g. with `Architecture: Modular, Feature-Driven` and `Data Fetching (TanStack Query)`) actually correct?**

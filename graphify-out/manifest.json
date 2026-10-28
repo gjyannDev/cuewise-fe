@@ -474,9 +474,9 @@
     "semantic_hash": ""
   },
   "src/app/(app)/_components/AuthedShell.tsx": {
-    "mtime": 1793165595.4037743,
-    "seen": 1793180120.6224992,
-    "ast_hash": "607d8b44217a91411a3ca2630bcdf882",
+    "mtime": 1793182314.7658234,
+    "seen": 1793182341.4209802,
+    "ast_hash": "28e8b71482514e6907b96d4f077657af",
     "semantic_hash": ""
   },
   "src/app/(app)/admin/page.tsx": {
@@ -534,15 +534,15 @@
     "semantic_hash": ""
   },
   "src/modules/navigation/navigation.constants.ts": {
-    "mtime": 1793165595.4154534,
-    "seen": 1793180120.622599,
-    "ast_hash": "d2928f7972dbc93d0aa22291ccfc8cc6",
+    "mtime": 1793182298.9857206,
+    "seen": 1793182341.4210918,
+    "ast_hash": "77dce57876f1d297b7880ac8cb386075",
     "semantic_hash": ""
   },
   "src/shared/sidebar/AppShell.tsx": {
-    "mtime": 1793165595.4154534,
-    "seen": 1793180120.6226106,
-    "ast_hash": "c42b4ac0ace6397e64c63570ee40c7ba",
+    "mtime": 1793182314.294898,
+    "seen": 1793182341.421105,
+    "ast_hash": "7bb55ec892c20bc340fe85d48ea8b876",
     "semantic_hash": ""
   },
   "src/shared/sidebar/AppShellSkeleton.tsx": {
@@ -570,9 +570,9 @@
     "semantic_hash": ""
   },
   "src/shared/sidebar/types/sidebar.types.ts": {
-    "mtime": 1793165595.4154534,
-    "seen": 1793180120.6226175,
-    "ast_hash": "4886d9cd0f850827b855186c878a2547",
+    "mtime": 1793182298.790728,
+    "seen": 1793182341.4211125,
+    "ast_hash": "a3eff731a8488ecedf581505d4d9ee72",
     "semantic_hash": ""
   },
   "src/shared/sidebar/utils/get-initials.ts": {
@@ -630,9 +630,9 @@
     "semantic_hash": ""
   },
   "src/app/(app)/interviews/page.tsx": {
-    "mtime": 1793180652.1837697,
-    "seen": 1793180697.8904984,
-    "ast_hash": "51d1ac7bdaecd28d2b8807e5ffdcc6ad",
+    "mtime": 1793182315.0113392,
+    "seen": 1793182341.420986,
+    "ast_hash": "b97835acf5c55a6ca5fd073c54a6ac87",
     "semantic_hash": ""
   },
   "src/app/(app)/interviews/_components/InterviewsContainer.tsx": {
@@ -762,9 +762,9 @@
     "semantic_hash": ""
   },
   "src/shared/forms/RadioGroupField.tsx": {
-    "mtime": 1793180626.42152,
-    "seen": 1793180697.8905976,
-    "ast_hash": "7807932aef084099c7d66d11c287c881",
+    "mtime": 1793181793.4026532,
+    "seen": 1793182341.4210968,
+    "ast_hash": "38e40e905c657fb52764f38cd2dfdc98",
     "semantic_hash": ""
   },
   "src/shared/forms/SliderField.tsx": {
@@ -798,15 +798,15 @@
     "semantic_hash": ""
   },
   "docs/features/interviews-setup-ui/plan.md": {
-    "mtime": 1793180901.654431,
-    "seen": 1793180905.6792624,
-    "ast_hash": "627d1be2c1c7efb2fe8f3cbfb0c3d9a2",
+    "mtime": 1793182337.20164,
+    "seen": 1793182341.4211574,
+    "ast_hash": "c9eccf1d9bebc0f3245ddf69b1cc5585",
     "semantic_hash": ""
   },
   "docs/features/interviews-setup-ui/spec.md": {
-    "mtime": 1793180901.654431,
-    "seen": 1793180905.6792645,
-    "ast_hash": "1280114222ed945b8c19bf9a059062b5",
+    "mtime": 1793181340.5307522,
+    "seen": 1793182341.4211583,
+    "ast_hash": "c972a3e516a096295148df647fdfec1b",
     "semantic_hash": ""
   },
   "docs/features/interviews-setup-ui/task.md": {
@@ -843,6 +843,30 @@
     "mtime": 1793180869.9611673,
     "seen": 1793180905.679118,
     "ast_hash": "c58675fc0e3e3676fd4fbb38c9c338d0",
+    "semantic_hash": ""
+  },
+  "src/modules/navigation/components/RoleHeaderTitle.tsx": {
+    "mtime": 1793182299.5605903,
+    "seen": 1793182341.421089,
+    "ast_hash": "0bfbf6ece842e54c85ff5177cabe35e7",
+    "semantic_hash": ""
+  },
+  "src/shared/sidebar/AppHeaderTitle.tsx": {
+    "mtime": 1793182299.1616228,
+    "seen": 1793182341.421104,
+    "ast_hash": "20ad9cd27b1afcb31ba1e6659a2275d6",
+    "semantic_hash": ""
+  },
+  "src/shared/sidebar/utils/find-active-nav-item.ts": {
+    "mtime": 1793182282.9112604,
+    "seen": 1793182341.421114,
+    "ast_hash": "e930d51c0e95497dd704a8143d5b642c",
+    "semantic_hash": ""
+  },
+  "tests/shared/sidebar/utils/find-active-nav-item.test.ts": {
+    "mtime": 1793182275.4085104,
+    "seen": 1793182341.4211404,
+    "ast_hash": "c737e55d4b5dd1c5a73b7825649d5d40",
     "semantic_hash": ""
   }
 }
