@@ -34,4 +34,10 @@ describe("getInterviewStep", () => {
   it("is the completed step whenever there is no current question, whatever the status says", () => {
     expect(getInterviewStep({ session, current_question: null })).toEqual({ kind: "completed" });
   });
+
+  it("is the ended step for an abandoned session, even if it still has a question (answering would only 409)", () => {
+    expect(getInterviewStep({ session: { ...session, status: "abandoned" }, current_question: question })).toEqual({
+      kind: "ended",
+    });
+  });
 });

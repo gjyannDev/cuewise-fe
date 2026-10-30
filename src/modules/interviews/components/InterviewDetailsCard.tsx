@@ -9,11 +9,13 @@ import { InterviewDetailList } from "./InterviewDetailList";
 
 type InterviewDetailsCardProps = {
   session: InterviewSession;
+  /** e.g. "Question 2 of 5": what the chat currently shows. */
+  progress?: string;
   /** Rendered under the details, e.g. the End interview button. */
   footer?: ReactNode;
 };
 
-export function InterviewDetailsCard({ session, footer }: InterviewDetailsCardProps) {
+export function InterviewDetailsCard({ session, progress, footer }: InterviewDetailsCardProps) {
   return (
     <Card>
       <CardHeader>
@@ -24,6 +26,7 @@ export function InterviewDetailsCard({ session, footer }: InterviewDetailsCardPr
       <CardContent>
         <InterviewDetailList
           items={[
+            ...(progress ? [{ label: "Progress", value: progress }] : []),
             { label: "Role", value: ROLE_LABELS[session.role] },
             { label: "Level", value: LEVEL_LABELS[session.level] },
             { label: "Style", value: INTERVIEW_TYPE_LABELS[session.interview_type] },

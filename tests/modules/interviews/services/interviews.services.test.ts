@@ -90,4 +90,30 @@ describe("interviewsService", () => {
       interviewsService.answer(ID, { question_id: interview.current_question.id, answer: "Yes" }),
     ).rejects.toThrow();
   });
+
+  it("messages requests the session's transcript and returns the parsed items", async () => {
+    const transcript = {
+      items: [
+        {
+          id: interview.current_question.id,
+          question_id: interview.current_question.id,
+          position: 1,
+          role: "interviewer",
+          kind: "question",
+          text: interview.current_question.text,
+          created_at: null,
+        },
+      ],
+    };
+    get.mockResolvedValue(ok(transcript));
+
+    await expect(interviewsService.messages(ID)).resolves.toEqual(transcript);
+    expect(get).toHaveBeenCalledWith(`/interviews/${ID}/messages`);
+  });
+
+  it("messages rejects a transcript that doesn't match the contract", async () => {
+    get.mockResolvedValue(ok({ items: [{ id: ID, kind: "question" }] }));
+
+    await expect(interviewsService.messages(ID)).rejects.toThrow();
+  });
 });

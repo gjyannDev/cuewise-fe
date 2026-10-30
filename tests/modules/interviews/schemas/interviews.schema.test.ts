@@ -8,6 +8,7 @@ import {
   interviewSchema,
   sessionParamSchema,
   startInterviewFormSchema,
+  transcriptSchema,
 } from "@/modules/interviews/schemas/interviews.schema";
 
 const issuesFor = (result: { success: boolean; error?: { issues: { path: PropertyKey[] }[] } }) =>
@@ -188,5 +189,48 @@ describe("sessionParamSchema", () => {
   it("accepts a UUID and rejects anything else", () => {
     expect(sessionParamSchema.safeParse(SESSION_ID).success).toBe(true);
     expect(sessionParamSchema.safeParse("abc").success).toBe(false);
+  });
+});
+
+describe("transcriptSchema", () => {
+  const answerId = "019a2b3c-4d5e-7f60-8a9b-0c1d2e3f4a5b";
+  const reactionId = "019a2b3c-4d5e-7f60-8a9b-0c1d2e3f4a5c";
+  const question = {
+    id: QUESTION_ID,
+    question_id: QUESTION_ID,
+    position: 1,
+    role: "interviewer",
+    kind: "question",
+    text: "Tell me about a time you disagreed with a teammate.",
+    created_at: "2026-10-30T09:00:00Z",
+  };
+  const answer = {
+    id: answerId,
+    question_id: QUESTION_ID,
+    position: 1,
+    role: "candidate",
+    kind: "answer",
+    text: "We talked it through.",
+    created_at: "2026-10-30T09:01:00Z",
+  };
+  const reaction = { ...answer, id: reactionId, role: "interviewer", kind: "reaction", text: "Thanks for sharing that." };
+
+  it("parses GET /interviews/{id}/messages: a question, its answer and the reaction", () => {
+    const payload = { items: [question, answer, reaction] };
+
+    expect(transcriptSchema.parse(payload)).toEqual(payload);
+  });
+
+  it("parses a question with no created_at (cuewise-be stores questions when the interview starts)", () => {
+    expect(transcriptSchema.safeParse({ items: [{ ...question, created_at: null }] }).success).toBe(true);
+  });
+
+  it("rejects a kind or role the backend doesn't send", () => {
+    expect(issuesFor(transcriptSchema.safeParse({ items: [{ ...answer, kind: "feedback" }] }))).toEqual(["items.0.kind"]);
+    expect(issuesFor(transcriptSchema.safeParse({ items: [{ ...answer, role: "system" }] }))).toEqual(["items.0.role"]);
+  });
+
+  it("rejects a response without items", () => {
+    expect(issuesFor(transcriptSchema.safeParse({}))).toEqual(["items"]);
   });
 });

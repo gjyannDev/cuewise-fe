@@ -11,17 +11,20 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
 type EndInterviewDialogProps = {
   onConfirm: () => void;
+  /** Classes for the trigger button (full width by default, e.g. compact in the mobile progress bar). */
+  triggerClassName?: string;
 };
 
 /** The End interview button plus its confirmation. Radix traps focus and returns it to the button on cancel. */
-export function EndInterviewDialog({ onConfirm }: EndInterviewDialogProps) {
+export function EndInterviewDialog({ onConfirm, triggerClassName }: EndInterviewDialogProps) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" className="h-11 w-full">
+        <Button variant="outline" className={cn("h-11 w-full", triggerClassName)}>
           End interview
         </Button>
       </DialogTrigger>

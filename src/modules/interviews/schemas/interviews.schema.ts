@@ -10,6 +10,8 @@ import {
   QUESTION_CATEGORIES,
   ROLES,
   SESSION_STATUSES,
+  TRANSCRIPT_KINDS,
+  TRANSCRIPT_ROLES,
 } from "../constants";
 
 export const roleSchema = z.enum(ROLES, { error: "Choose a role" });
@@ -78,6 +80,20 @@ export const answerRequestSchema = answerFormSchema.extend({ question_id: z.uuid
 export const answerResponseSchema = interviewSchema.extend({
   reaction: z.object({ id: z.uuid(), text: z.string() }),
 });
+
+/** One line of GET /interviews/{id}/messages: each shown question, then its answer and reaction once they exist. */
+export const transcriptItemSchema = z.object({
+  id: z.uuid(),
+  question_id: z.uuid(),
+  position: z.number().int(),
+  role: z.enum(TRANSCRIPT_ROLES),
+  kind: z.enum(TRANSCRIPT_KINDS),
+  text: z.string(),
+  // Null for questions: they are stored when the interview starts, not when they are shown.
+  created_at: z.string().nullable(),
+});
+
+export const transcriptSchema = z.object({ items: z.array(transcriptItemSchema) });
 
 /** `?session=` on /interviews. Checked before any request is made. */
 export const sessionParamSchema = z.uuid();

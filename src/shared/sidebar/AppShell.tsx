@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 
-import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 type AppShellProps = {
@@ -10,22 +9,21 @@ type AppShellProps = {
   children: ReactNode;
 };
 
-/** Signed-in page frame: sidebar slot, header with the collapse trigger and page title, and the page content. */
+/**
+ * Signed-in page frame: sidebar slot, header with the collapse trigger and page title, and the page content.
+ * The header height and content padding are CSS variables so pages can size against them (sticky offsets, the
+ * fixed-height interview chat) without repeating the numbers.
+ */
 export function AppShell({ sidebar, title, children }: AppShellProps) {
   return (
     <SidebarProvider>
       {sidebar}
-      <SidebarInset>
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+      <SidebarInset className="[--app-content-py:1rem] [--app-header-height:3.5rem] md:[--app-content-py:1.5rem]">
+        <header className="sticky top-0 z-10 flex h-(--app-header-height) shrink-0 items-center gap-2 border-b bg-background px-4">
           <SidebarTrigger className="-ml-1" />
-          {title && (
-            <>
-              <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-6" />
-              {title}
-            </>
-          )}
+          {title}
         </header>
-        <div className="flex flex-1 flex-col p-4 md:p-6">{children}</div>
+        <div className="flex flex-1 flex-col px-4 py-(--app-content-py) md:px-6">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );

@@ -8,11 +8,14 @@ import { Button } from "@/components/ui/button";
 import { useMutationCallbacks } from "@/hooks/use-mutation-callback";
 import { parseApiError } from "@/lib/config/api.helper";
 import { InterviewConfigForm } from "@/modules/interviews/components/InterviewConfigForm";
-import { InterviewEndedPanel } from "@/modules/interviews/components/InterviewEndedPanel";
 import { InterviewMessageCard } from "@/modules/interviews/components/InterviewMessageCard";
 import { InterviewSessionSkeleton } from "@/modules/interviews/components/InterviewSessionSkeleton";
 import { INTERVIEWS_ROUTE } from "@/modules/interviews/constants";
-import { useInterviewQuery, useStartInterviewMutation } from "@/modules/interviews/queries/interviews.queries";
+import {
+  useInterviewMessagesQuery,
+  useInterviewQuery,
+  useStartInterviewMutation,
+} from "@/modules/interviews/queries/interviews.queries";
 import type {
   SessionParam,
   StartInterviewFieldErrors,
@@ -35,6 +38,7 @@ export function InterviewsContainer({ sessionParam }: InterviewsContainerProps) 
   const sessionId = sessionParam.kind === "valid" ? sessionParam.id : undefined;
   const startInterview = useStartInterviewMutation();
   const interview = useInterviewQuery(sessionId);
+  const messages = useInterviewMessagesQuery(sessionId);
   // Keeps the form busy until the interview screen has actually replaced it.
   const [isNavigating, startNavigation] = useTransition();
   // ponytail: client-only until cuewise-be can end a session; a reload shows the interview again (spec EC13).
@@ -77,13 +81,14 @@ export function InterviewsContainer({ sessionParam }: InterviewsContainerProps) 
   if (sessionParam.kind === "invalid") {
     return notFound;
   }
-  if (interview.isPending) {
+  if (interview.isPending || messages.isPending) {
     return <InterviewSessionSkeleton />;
   }
-  if (interview.isError) {
-    if (parseApiError(interview.error).status === 404) {
-      return notFound;
-    }
+  if ([interview, messages].some((query) => query.isError && parseApiError(query.error).status === 404)) {
+    return notFound;
+  }
+  // Only when nothing is cached: a failed background refetch keeps the interview on screen.
+  if (!interview.data) {
     return (
       <InterviewMessageCard
         role="alert"
@@ -99,13 +104,13 @@ export function InterviewsContainer({ sessionParam }: InterviewsContainerProps) 
       />
     );
   }
-  if (endedSessionId === sessionId) {
-    return <InterviewEndedPanel session={interview.data.session} onStartNew={goToSetup} />;
-  }
   return (
     <ActiveInterview
       key={sessionId}
       interview={interview.data}
+      transcript={messages.data?.items}
+      onRetryThread={() => messages.refetch()}
+      isEnded={endedSessionId === sessionId}
       onEnd={() => setEndedSessionId(sessionId)}
       onStartNew={goToSetup}
     />

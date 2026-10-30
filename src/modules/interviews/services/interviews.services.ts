@@ -1,7 +1,18 @@
 import { API } from "@/lib/config/axios.client";
 
-import { answerRequestSchema, answerResponseSchema, interviewSchema } from "../schemas/interviews.schema";
-import type { AnswerRequest, AnswerResponse, Interview, StartInterviewRequest } from "../types/interviews.types";
+import {
+  answerRequestSchema,
+  answerResponseSchema,
+  interviewSchema,
+  transcriptSchema,
+} from "../schemas/interviews.schema";
+import type {
+  AnswerRequest,
+  AnswerResponse,
+  Interview,
+  StartInterviewRequest,
+  Transcript,
+} from "../types/interviews.types";
 
 /** Goes through the Next.js /api forwarder, which adds the token from the httpOnly cookie. */
 class InterviewsService {
@@ -22,6 +33,11 @@ class InterviewsService {
     const body = answerRequestSchema.parse(params);
     const response = await API.post(`${this.basePath}/${encodeURIComponent(id)}/messages`, body);
     return answerResponseSchema.parse(response.data);
+  }
+
+  async messages(id: string): Promise<Transcript> {
+    const response = await API.get(`${this.basePath}/${encodeURIComponent(id)}/messages`);
+    return transcriptSchema.parse(response.data);
   }
 }
 

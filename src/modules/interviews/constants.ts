@@ -6,6 +6,9 @@ export const LEVELS = ["intern", "junior", "mid", "senior"] as const;
 export const INTERVIEW_TYPES = ["technical", "behavioral", "mixed"] as const;
 export const QUESTION_CATEGORIES = ["technical", "behavioral"] as const;
 export const SESSION_STATUSES = ["in_progress", "abandoned", "completed"] as const;
+/** Who said a transcript line, and what it is (GET /interviews/{id}/messages). */
+export const TRANSCRIPT_ROLES = ["interviewer", "candidate"] as const;
+export const TRANSCRIPT_KINDS = ["question", "answer", "reaction"] as const;
 
 export const MIN_QUESTION_COUNT = 1;
 export const MAX_QUESTION_COUNT = 10;
@@ -16,8 +19,28 @@ export const ANSWER_MAX_LENGTH = 2000;
 export const RESYNC_ERROR_CODES = ["QUESTION_NOT_CURRENT", "SESSION_NOT_IN_PROGRESS"] as const;
 
 export const RESYNC_MESSAGE = "This question was already answered. Showing where you are now.";
-/** Shown on the completed screen when the closing reaction is gone (reload or revisit). */
-export const COMPLETED_FALLBACK_TEXT = "You've answered every question. Thanks for practicing with Cuewise.";
+
+/** Shown while the interviewer replies; one is picked at random per answer. Neutral: never hints at quality. */
+export const INTERVIEWER_THINKING_LABELS = [
+  "Thinking…",
+  "Reading your answer…",
+  "Considering your answer…",
+  "Taking notes…",
+  "Mulling it over…",
+  "Preparing the next question…",
+] as const;
+export const INTERVIEWER_SLOW_LABEL = "Still thinking…";
+/** Used instead of a random label when answering the last question (there is no next question to prepare). */
+export const INTERVIEWER_WRAP_UP_LABEL = "Wrapping up…";
+
+export const THINKING_SLOW_AFTER_MS = 5000;
+/** Keeps the indicator up long enough not to flash when the reply is fast. */
+export const MIN_THINKING_MS = 500;
+/** A beat between the reaction and the next question (or the completed card). */
+export const REVEAL_DELAY_MS = 600;
+
+export const THREAD_ERROR_MESSAGE = "Couldn't load the conversation.";
+export const STALE_THREAD_MESSAGE = "Couldn't load the latest question.";
 
 export const ROLE_LABELS: Record<(typeof ROLES)[number], string> = {
   frontend: "Frontend",

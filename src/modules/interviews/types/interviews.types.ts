@@ -9,6 +9,8 @@ import type {
   levelSchema,
   roleSchema,
   startInterviewFormSchema,
+  transcriptItemSchema,
+  transcriptSchema,
 } from "../schemas/interviews.schema";
 
 export type Role = z.infer<typeof roleSchema>;
@@ -39,5 +41,26 @@ export type StartInterviewFieldErrors = Partial<Record<keyof StartInterviewFormV
 /** What to do after a failed answer: refetch the interview, show the error under the answer, or toast it. */
 export type AnswerErrorResult = { kind: "resync" } | { kind: "field"; message: string } | { kind: "toast" };
 
-/** Which screen a loaded interview needs: the current question, or the completed panel. */
-export type InterviewStep = { kind: "question"; question: InterviewQuestion } | { kind: "completed" };
+/** Which screen a loaded interview needs: the current question, the completed card, or the ended card (abandoned). */
+export type InterviewStep =
+  | { kind: "question"; question: InterviewQuestion }
+  | { kind: "completed" }
+  | { kind: "ended" };
+
+export type TranscriptItem = z.infer<typeof transcriptItemSchema>;
+export type Transcript = z.infer<typeof transcriptSchema>;
+
+/**
+ * A transcript line as the thread renders it. `key` is `question_id:kind`, stable across refetches (the client id
+ * of a just-sent answer is later replaced by the stored one) so bubbles never remount and the log never re-announces.
+ */
+export type ThreadItem = TranscriptItem & { key: string; pending?: boolean };
+
+/** What the thread shows, plus what the screen derives from it. */
+export type ThreadView = {
+  items: ThreadItem[];
+  /** Position of the last visible question: the progress shown in "Question N of M". */
+  position: number;
+  /** The last question without an answer, from the whole thread (even while hidden): what the composer answers. */
+  openQuestion?: TranscriptItem;
+};
