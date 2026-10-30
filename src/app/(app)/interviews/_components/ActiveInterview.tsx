@@ -4,6 +4,7 @@ import { MessageSquareWarningIcon, RotateCcwIcon } from "lucide-react";
 import { type ReactNode, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
+import { useWarnBeforeUnload } from "@/hooks/use-warn-before-unload";
 import { type AnswerComposerHandle, AnswerComposer } from "@/modules/interviews/components/AnswerComposer";
 import { InterviewChat } from "@/modules/interviews/components/InterviewChat";
 import { InterviewClosingCard } from "@/modules/interviews/components/InterviewClosingCard";
@@ -38,6 +39,8 @@ export function ActiveInterview({
 }: ActiveInterviewProps) {
   const { session } = interview;
   const chat = useInterviewChat(session.id, transcript ?? [], session.question_count);
+  // Leaving mid-send drops the reply (the composer warns about unsent text itself).
+  useWarnBeforeUnload(chat.isSending);
   const composer = useRef<AnswerComposerHandle>(null);
   const step = getInterviewStep(interview);
   const openQuestion = chat.view.openQuestion;

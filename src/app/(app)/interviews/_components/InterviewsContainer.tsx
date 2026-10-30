@@ -6,11 +6,11 @@ import { useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useMutationCallbacks } from "@/hooks/use-mutation-callback";
-import { parseApiError } from "@/lib/config/api.helper";
+import { isNoResponseError, parseApiError } from "@/lib/config/api.helper";
 import { InterviewConfigForm } from "@/modules/interviews/components/InterviewConfigForm";
 import { InterviewMessageCard } from "@/modules/interviews/components/InterviewMessageCard";
 import { InterviewSessionSkeleton } from "@/modules/interviews/components/InterviewSessionSkeleton";
-import { INTERVIEWS_ROUTE } from "@/modules/interviews/constants";
+import { INTERVIEWS_ROUTE, START_TIMEOUT_MESSAGE } from "@/modules/interviews/constants";
 import {
   useInterviewMessagesQuery,
   useInterviewQuery,
@@ -46,6 +46,8 @@ export function InterviewsContainer({ sessionParam }: InterviewsContainerProps) 
 
   const { buildCallbacks } = useMutationCallbacks({ entityName: "Interview" });
   const startCallbacks = buildCallbacks("start", "interview", { errorMessage: "Couldn't start the interview" });
+  // No reply within START_TIMEOUT_MS: a session may exist on the backend, but nothing can find it yet.
+  const startTimeoutCallbacks = buildCallbacks("start", "interview", { errorMessage: START_TIMEOUT_MESSAGE });
 
   const goToSetup = () => startNavigation(() => router.push(INTERVIEWS_ROUTE));
 
@@ -58,7 +60,7 @@ export function InterviewsContainer({ sessionParam }: InterviewsContainerProps) 
       if (fieldErrors) {
         return fieldErrors;
       }
-      startCallbacks.onError(error);
+      (isNoResponseError(error) ? startTimeoutCallbacks : startCallbacks).onError(error);
     }
   }
 

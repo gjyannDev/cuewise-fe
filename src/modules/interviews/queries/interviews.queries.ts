@@ -1,7 +1,13 @@
 import { skipToken, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { interviewsService } from "../services/interviews.services";
-import type { AnswerRequest, Interview, StartInterviewRequest, Transcript } from "../types/interviews.types";
+import type {
+  AnswerOutcome,
+  AnswerRequest,
+  Interview,
+  StartInterviewRequest,
+  Transcript,
+} from "../types/interviews.types";
 import { appendAnswerTurn } from "../utils/append-answer-turn";
 import { getAnswerErrorResult } from "../utils/get-answer-error-result";
 import { interviewKeys } from "./interviews.keys";
@@ -38,13 +44,45 @@ export function useAnswerInterviewMutation(id: string) {
   // detail(id) is a prefix of messages(id), so this covers the interview and its conversation.
   const cancelFetches = () => queryClient.cancelQueries({ queryKey: interviewKeys.detail(id) });
 
+  /**
+   * No reply came back, but cuewise-be saves the turn after the LLM call, so it may have succeeded. If the interview
+   * has moved past the question, it did: reload the conversation and report `recovered`. Otherwise rethrow; the
+   * screen says the send couldn't be confirmed, and a resend either succeeds or gets a 409 that resyncs.
+   */
+  async function recover(error: unknown, { question_id }: AnswerRequest): Promise<AnswerOutcome> {
+    const interview = await queryClient.fetchQuery({
+      queryKey: interviewKeys.detail(id),
+      queryFn: () => interviewsService.get(id),
+      staleTime: 0,
+      retry: false,
+    });
+    if (interview.current_question?.id === question_id) {
+      throw error;
+    }
+    await queryClient.invalidateQueries({ queryKey: interviewKeys.messages(id) });
+    return { kind: "recovered" };
+  }
+
   return useMutation({
     mutationKey: interviewKeys.answer(id),
-    mutationFn: (params: AnswerRequest) => interviewsService.answer(id, params),
+    mutationFn: async (params: AnswerRequest): Promise<AnswerOutcome> => {
+      try {
+        return { kind: "answered", response: await interviewsService.answer(id, params) };
+      } catch (error) {
+        if (getAnswerErrorResult(error).kind !== "unknown") {
+          throw error;
+        }
+        return recover(error, params);
+      }
+    },
     // A refetch already in flight (e.g. on window focus) would land after the write below and erase the new turn.
     onMutate: cancelFetches,
     // The backend has moved on, so the cache does too, without a GET; the screen holds the next question back briefly.
-    onSuccess: async (response, request) => {
+    onSuccess: async (outcome, request) => {
+      if (outcome.kind !== "answered") {
+        return;
+      }
+      const { response } = outcome;
       await cancelFetches();
       queryClient.setQueryData<Interview>(interviewKeys.detail(id), {
         session: response.session,

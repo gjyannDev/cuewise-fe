@@ -116,6 +116,26 @@ describe("/api/[...path] forwarder", () => {
     expect((await response.json()).error.code).toBe("SERVICE_UNAVAILABLE");
   });
 
+  it.each([
+    ["POST", ["interviews", "0b7c2f4e-5d1a-4c3b-9e8f-1a2b3c4d5e6f", "messages"], 45_000],
+    ["POST", ["interviews"], 60_000],
+    ["GET", ["interviews", "0b7c2f4e-5d1a-4c3b-9e8f-1a2b3c4d5e6f", "messages"], 15_000],
+    ["GET", ["interviews"], 15_000],
+    ["POST", ["users"], 15_000],
+  ])("gives %s %j a %i ms budget (only the LLM-backed interview POSTs wait longer)", async (method, path, budget) => {
+    const timeout = vi.spyOn(AbortSignal, "timeout");
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, {}));
+    const handler = method === "POST" ? POST : GET;
+
+    await handler(
+      new Request(`http://localhost/api/${path.join("/")}`, { method, body: method === "POST" ? "{}" : undefined }),
+      ctx(...path),
+    );
+
+    expect(timeout).toHaveBeenCalledWith(budget);
+    timeout.mockRestore();
+  });
+
   it("passes a non-JSON 401 through without crashing and keeps the cookie", async () => {
     cookieJar.store.set("access_token", { value: "live-token" });
     fetchMock.mockResolvedValueOnce(new Response("<html>401</html>", { status: 401 }));

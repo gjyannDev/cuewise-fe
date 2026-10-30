@@ -1,7 +1,7 @@
 import { AxiosError, AxiosHeaders } from "axios";
 import { describe, expect, it } from "vitest";
 
-import { parseApiError } from "@/lib/config/api.helper";
+import { isNoResponseError, parseApiError } from "@/lib/config/api.helper";
 
 function axiosErrorWith(status: number, data: unknown) {
   const config = { headers: new AxiosHeaders() };
@@ -66,5 +66,27 @@ describe("parseApiError", () => {
       fieldErrors: {},
     });
     expect(parseApiError(new Error("boom")).message).toBe("Something went wrong, please try again");
+  });
+});
+
+describe("isNoResponseError (the outcome is unknown: the backend may have done the work)", () => {
+  it("is true for a timeout", () => {
+    expect(isNoResponseError(new AxiosError("timeout of 45000ms exceeded", "ECONNABORTED"))).toBe(true);
+  });
+
+  it("is true for a network drop", () => {
+    expect(isNoResponseError(new AxiosError("Network Error", "ERR_NETWORK"))).toBe(true);
+  });
+
+  it("is true for the /api forwarder's 503 when it couldn't reach the backend", () => {
+    expect(isNoResponseError(axiosErrorWith(503, body("SERVICE_UNAVAILABLE", "Something went wrong")))).toBe(true);
+  });
+
+  it.each([
+    ["a 500", axiosErrorWith(500, body("INTERNAL_ERROR", "Something went wrong"))],
+    ["a 409", axiosErrorWith(409, body("QUESTION_NOT_CURRENT", "Not the current question"))],
+    ["a plain Error", new Error("boom")],
+  ])("is false for %s: the backend answered, so the outcome is known", (_, error) => {
+    expect(isNoResponseError(error)).toBe(false);
   });
 });

@@ -38,8 +38,18 @@ export type SessionParam = { kind: "none" } | { kind: "invalid" } | { kind: "val
 /** Field errors the setup form should show after a failed start. */
 export type StartInterviewFieldErrors = Partial<Record<keyof StartInterviewFormValues, string>>;
 
-/** What to do after a failed answer: refetch the interview, show the error under the answer, or toast it. */
-export type AnswerErrorResult = { kind: "resync" } | { kind: "field"; message: string } | { kind: "toast" };
+/**
+ * What to do after a failed answer: refetch the interview, show the error under the answer, toast it, or (no
+ * response at all) treat the outcome as unknown because the backend may have saved it.
+ */
+export type AnswerErrorResult =
+  | { kind: "resync" }
+  | { kind: "field"; message: string }
+  | { kind: "toast" }
+  | { kind: "unknown" };
+
+/** How a send ended: the backend's reply, or `recovered` when a lost reply turned out to have been saved. */
+export type AnswerOutcome = { kind: "answered"; response: AnswerResponse } | { kind: "recovered" };
 
 /** Which screen a loaded interview needs: the current question, the completed card, or the ended card (abandoned). */
 export type InterviewStep =

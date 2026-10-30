@@ -42,6 +42,19 @@ export const REVEAL_DELAY_MS = 600;
 export const THREAD_ERROR_MESSAGE = "Couldn't load the conversation.";
 export const STALE_THREAD_MESSAGE = "Couldn't load the latest question.";
 
+/**
+ * Longer than the default 15s: cuewise-be may spend up to 30s (llm_total_budget_seconds) writing the next question,
+ * and the turn is only saved after that. Keep in step with the /api forwarder's budget for the same route.
+ */
+export const ANSWER_TIMEOUT_MS = 45_000;
+/** Starting adds a job-description summary (capped at 10s) before the first question's 30s LLM budget. */
+export const START_TIMEOUT_MS = 60_000;
+
+/** A send with no response: the backend may still have saved it, so this never claims the answer was lost. */
+export const UNCONFIRMED_SEND_MESSAGE =
+  "We couldn't confirm your answer was sent. Check the conversation before sending again.";
+export const START_TIMEOUT_MESSAGE = "Starting the interview took too long. Please try again.";
+
 export const ROLE_LABELS: Record<(typeof ROLES)[number], string> = {
   frontend: "Frontend",
   backend: "Backend",

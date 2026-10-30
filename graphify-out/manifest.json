@@ -156,15 +156,15 @@
     "semantic_hash": ""
   },
   "src/lib/config/api.helper.ts": {
-    "mtime": 1793161319.7853327,
-    "seen": 1793161814.6754174,
-    "ast_hash": "caaad0071e2c7a717c689f53099c2fe1",
+    "mtime": 1793346979.8934548,
+    "seen": 1793347231.4068286,
+    "ast_hash": "838d2f5783a8799a024d4713c015d060",
     "semantic_hash": ""
   },
   "src/lib/config/axios.client.ts": {
-    "mtime": 1793161319.7853327,
-    "seen": 1793161814.6754184,
-    "ast_hash": "27e14a750a92db3185d9039702906101",
+    "mtime": 1793346991.180048,
+    "seen": 1793347231.40683,
+    "ast_hash": "cca0c32f5eb39253e19f5b79949e3bed",
     "semantic_hash": ""
   },
   "src/lib/font.ts": {
@@ -264,9 +264,9 @@
     "semantic_hash": ""
   },
   "src/app/api/[...path]/route.ts": {
-    "mtime": 1793161319.7846723,
-    "seen": 1793161814.6753876,
-    "ast_hash": "555e5a0dc4f253df15273e4b8cd88e96",
+    "mtime": 1793347061.431481,
+    "seen": 1793347231.4067612,
+    "ast_hash": "e31f4705428591e740ac5bfd50ee6eda",
     "semantic_hash": ""
   },
   "src/app/api/auth/login/route.ts": {
@@ -408,9 +408,9 @@
     "semantic_hash": ""
   },
   "tests/app/api/[...path]/route.test.ts": {
-    "mtime": 1793161319.8087091,
-    "seen": 1793161814.6754518,
-    "ast_hash": "73c794e2853ec1ff2a9c42c048f68daa",
+    "mtime": 1793347061.6227622,
+    "seen": 1793347231.4069607,
+    "ast_hash": "d5b53d6456f2e9830860673463d57ee5",
     "semantic_hash": ""
   },
   "tests/app/api/auth/auth.routes.test.ts": {
@@ -438,9 +438,9 @@
     "semantic_hash": ""
   },
   "tests/lib/config/api.helper.test.ts": {
-    "mtime": 1793161319.8118155,
-    "seen": 1793161814.6754568,
-    "ast_hash": "353803ad4c57b4400a27510ab8e45eca",
+    "mtime": 1793346980.1318796,
+    "seen": 1793347231.4069674,
+    "ast_hash": "0393894887491534d4f33d35b534c417",
     "semantic_hash": ""
   },
   "tests/lib/config/bff.server.test.ts": {
@@ -636,9 +636,9 @@
     "semantic_hash": ""
   },
   "src/app/(app)/interviews/_components/InterviewsContainer.tsx": {
-    "mtime": 1793345414.2620764,
-    "seen": 1793345539.7087739,
-    "ast_hash": "6469d07f9db67005ecc50e763a0e307f",
+    "mtime": 1793347182.7577002,
+    "seen": 1793347231.4067397,
+    "ast_hash": "788073c3b922de71eec28800f4ce2950",
     "semantic_hash": ""
   },
   "src/components/ui/badge.tsx": {
@@ -690,9 +690,9 @@
     "semantic_hash": ""
   },
   "src/modules/interviews/constants.ts": {
-    "mtime": 1793345432.6449883,
-    "seen": 1793345539.708881,
-    "ast_hash": "a96b4f4e566e130b6106fdeeb74897af",
+    "mtime": 1793347002.3571682,
+    "seen": 1793347231.4068952,
+    "ast_hash": "6ba09f7ce8b1d93bbf85e943bef1a4cf",
     "semantic_hash": ""
   },
   "src/modules/interviews/queries/interviews.keys.ts": {
@@ -702,9 +702,9 @@
     "semantic_hash": ""
   },
   "src/modules/interviews/queries/interviews.queries.ts": {
-    "mtime": 1793345042.0811415,
-    "seen": 1793345539.7088842,
-    "ast_hash": "edafdea47b3475a735f9f7370412f638",
+    "mtime": 1793347129.4744122,
+    "seen": 1793347231.4069006,
+    "ast_hash": "d66161189cf5bc03079dd58242ac6757",
     "semantic_hash": ""
   },
   "src/modules/interviews/schemas/interviews.schema.ts": {
@@ -714,15 +714,15 @@
     "semantic_hash": ""
   },
   "src/modules/interviews/services/interviews.services.ts": {
-    "mtime": 1793344818.1091976,
-    "seen": 1793345539.7088866,
-    "ast_hash": "9d8898dab47a4c369f81e5cd5f121b12",
+    "mtime": 1793347031.8562374,
+    "seen": 1793347231.4069045,
+    "ast_hash": "099508d88dc308203eb94032c3374da7",
     "semantic_hash": ""
   },
   "src/modules/interviews/types/interviews.types.ts": {
-    "mtime": 1793344793.7086847,
-    "seen": 1793345539.7088878,
-    "ast_hash": "f7fb9b3177931cf46b66345444a58c2b",
+    "mtime": 1793347109.1230485,
+    "seen": 1793347231.4069066,
+    "ast_hash": "a6a5c9e6ffbc949ebf3c195c17670560",
     "semantic_hash": ""
   },
   "src/modules/interviews/utils/get-start-error-result.ts": {
@@ -756,9 +756,9 @@
     "semantic_hash": ""
   },
   "tests/modules/interviews/services/interviews.services.test.ts": {
-    "mtime": 1793344808.9520857,
-    "seen": 1793345539.7089472,
-    "ast_hash": "e79d65fd429ff96fc5937d409649088d",
+    "mtime": 1793347021.4813657,
+    "seen": 1793347231.4069748,
+    "ast_hash": "b7b77f64b23dab0d619928c809ed2f8e",
     "semantic_hash": ""
   },
   "tests/modules/interviews/utils/get-start-error-result.test.ts": {
@@ -846,9 +846,9 @@
     "semantic_hash": ""
   },
   "src/app/(app)/interviews/_components/ActiveInterview.tsx": {
-    "mtime": 1793345398.4342513,
-    "seen": 1793345539.7087724,
-    "ast_hash": "c3385eda89f6da76d41e3d2a20a64947",
+    "mtime": 1793347170.6990738,
+    "seen": 1793347231.406737,
+    "ast_hash": "7d5984cc7806b1d61befebaddc129676",
     "semantic_hash": ""
   },
   "src/modules/interviews/utils/focus-on-mount.ts": {
@@ -858,9 +858,9 @@
     "semantic_hash": ""
   },
   "src/modules/interviews/utils/get-answer-error-result.ts": {
-    "mtime": 1793325588.6967652,
-    "seen": 1793325886.6627324,
-    "ast_hash": "e58c47cad88e5ed62eeaea7f177e5b67",
+    "mtime": 1793347108.8006349,
+    "seen": 1793347231.4069161,
+    "ast_hash": "e043a50630aa7a42b5ba31af9affeeae",
     "semantic_hash": ""
   },
   "src/modules/interviews/utils/get-interview-step.ts": {
@@ -870,9 +870,9 @@
     "semantic_hash": ""
   },
   "tests/modules/interviews/utils/get-answer-error-result.test.ts": {
-    "mtime": 1793325581.382128,
-    "seen": 1793325886.6627817,
-    "ast_hash": "7805ce12766b811895dca1dcfb1b4cd2",
+    "mtime": 1793347095.941348,
+    "seen": 1793347231.4069781,
+    "ast_hash": "b33d24c8c71592875b7cd8cde67c7a89",
     "semantic_hash": ""
   },
   "tests/modules/interviews/utils/get-interview-step.test.ts": {
@@ -912,9 +912,9 @@
     "semantic_hash": ""
   },
   "src/modules/interviews/components/AnswerComposer.tsx": {
-    "mtime": 1793345298.1490555,
-    "seen": 1793345539.708859,
-    "ast_hash": "58b932978e1b5971088f7307e82f2c70",
+    "mtime": 1793347170.104621,
+    "seen": 1793347231.406862,
+    "ast_hash": "7046221912d7158d2dbf7a77f9d4711b",
     "semantic_hash": ""
   },
   "src/modules/interviews/components/ChatMessage.tsx": {
@@ -966,9 +966,9 @@
     "semantic_hash": ""
   },
   "src/modules/interviews/hooks/use-interview-chat.ts": {
-    "mtime": 1793345398.1428933,
-    "seen": 1793345539.7088819,
-    "ast_hash": "4e4625c03a7cc402b9260af90b656dca",
+    "mtime": 1793347146.0915427,
+    "seen": 1793347231.4068968,
+    "ast_hash": "cecda6752375c114dc78137f01874290",
     "semantic_hash": ""
   },
   "src/modules/interviews/utils/append-answer-turn.ts": {
@@ -1026,9 +1026,21 @@
     "semantic_hash": ""
   },
   "docs/features/interviews-chat-layout/task.md": {
-    "mtime": 1793344626.8471258,
-    "seen": 1793345539.7089825,
-    "ast_hash": "71626737e7b7410906a0dfa048efd417",
+    "mtime": 1793345577.9283319,
+    "seen": 1793347231.4070082,
+    "ast_hash": "edd7182fc7466a5948aa031ae1a6d9a8",
+    "semantic_hash": ""
+  },
+  "src/hooks/use-warn-before-unload.ts": {
+    "mtime": 1793347155.9806614,
+    "seen": 1793347231.4068239,
+    "ast_hash": "97ec37ee15a76309403954353965aceb",
+    "semantic_hash": ""
+  },
+  "src/lib/unload-guard.ts": {
+    "mtime": 1793346990.450324,
+    "seen": 1793347231.406841,
+    "ast_hash": "7d784998009e2a5ba5a88d1c19ba1d37",
     "semantic_hash": ""
   }
 }

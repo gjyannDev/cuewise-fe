@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { API } from "@/lib/config/axios.client";
+import { ANSWER_TIMEOUT_MS, START_TIMEOUT_MS } from "@/modules/interviews/constants";
 import { interviewsService } from "@/modules/interviews/services/interviews.services";
 import { ok } from "@tests/helpers/axios";
 
@@ -35,12 +36,12 @@ describe("interviewsService", () => {
     get.mockReset();
   });
 
-  it("start posts the request body to /interviews and returns the parsed interview", async () => {
+  it("start posts the request body to /interviews with the start timeout and returns the parsed interview", async () => {
     post.mockResolvedValue(ok(interview, 201));
     const body = { role: "backend", level: "junior", interview_type: "mixed", question_count: 5 } as const;
 
     await expect(interviewsService.start(body)).resolves.toEqual(interview);
-    expect(post).toHaveBeenCalledWith("/interviews", body);
+    expect(post).toHaveBeenCalledWith("/interviews", body, { timeout: START_TIMEOUT_MS });
   });
 
   it("get requests the interview by id", async () => {
@@ -66,7 +67,7 @@ describe("interviewsService", () => {
     const body = { question_id: interview.current_question.id, answer: "We talked it through." };
 
     await expect(interviewsService.answer(ID, body)).resolves.toEqual(turn);
-    expect(post).toHaveBeenCalledWith(`/interviews/${ID}/messages`, body);
+    expect(post).toHaveBeenCalledWith(`/interviews/${ID}/messages`, body, { timeout: ANSWER_TIMEOUT_MS });
   });
 
   it("answer sends a trimmed answer and no extra keys (cuewise-be rejects them)", async () => {
@@ -77,10 +78,11 @@ describe("interviewsService", () => {
 
     await interviewsService.answer(ID, params);
 
-    expect(post).toHaveBeenCalledWith(`/interviews/${ID}/messages`, {
-      question_id: interview.current_question.id,
-      answer: "Yes",
-    });
+    expect(post).toHaveBeenCalledWith(
+      `/interviews/${ID}/messages`,
+      { question_id: interview.current_question.id, answer: "Yes" },
+      { timeout: ANSWER_TIMEOUT_MS },
+    );
   });
 
   it("answer rejects a turn without a reaction", async () => {

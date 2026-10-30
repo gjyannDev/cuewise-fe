@@ -2,6 +2,7 @@ import axios, { type AxiosError } from "axios";
 
 import { type ApiErrorBody, apiErrorBodySchema, isSessionErrorCode } from "@/lib/config/api.helper";
 import { getQueryClient } from "@/lib/config/query-client";
+import { bypassUnloadWarning } from "@/lib/unload-guard";
 import { isPublicAuthRoute, SIGNIN_ROUTE } from "@/modules/auth/session/auth-session";
 
 /**
@@ -34,6 +35,8 @@ API.interceptors.response.use(
     ) {
       getQueryClient().clear();
       const next = `${window.location.pathname}${window.location.search}`;
+      // The user must get to sign in even with a half-written answer on screen (it can't be sent anyway).
+      bypassUnloadWarning();
       // Deliberate hard navigation: an interceptor has no router, and a full reload discards every
       // bit of the previous user's client state.
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination

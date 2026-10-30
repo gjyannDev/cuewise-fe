@@ -2,6 +2,7 @@ import { apiErrorBodySchema, GENERIC_ERROR_MESSAGE, isSessionErrorCode } from "@
 import { errorResponse } from "@/lib/config/bff.server";
 import { getApiUrl } from "@/lib/config/env.server";
 import { clearAccessTokenCookie, getAccessToken } from "@/modules/auth/session/auth-cookie.server";
+import { ANSWER_TIMEOUT_MS, START_TIMEOUT_MS } from "@/modules/interviews/constants";
 
 /**
  * Catch-all BFF forwarder: the browser calls /api/<path>, this calls cuewise-be /api/v1/<path>
@@ -13,6 +14,20 @@ type ForwardContext = { params: Promise<{ path: string[] }> };
 
 const REQUEST_TIMEOUT_MS = 15_000;
 const OWNED_BY_NEXT = new Set(["auth/login", "auth/register", "auth/logout"]);
+
+/**
+ * POSTs where cuewise-be waits on the LLM (up to 30s, plus a job-description summary on start), so the default 15s
+ * would cut off requests that are still succeeding. Same budgets as the browser side (interviews constants).
+ */
+const SLOW_POSTS: { path: RegExp; timeoutMs: number }[] = [
+  { path: /^interviews\/[^/]+\/messages$/, timeoutMs: ANSWER_TIMEOUT_MS },
+  { path: /^interviews$/, timeoutMs: START_TIMEOUT_MS },
+];
+
+function timeoutFor(method: string, path: string) {
+  const slow = method === "POST" ? SLOW_POSTS.find((route) => route.path.test(path)) : undefined;
+  return slow?.timeoutMs ?? REQUEST_TIMEOUT_MS;
+}
 
 function parseJsonOrNull(text: string): unknown {
   try {
@@ -51,7 +66,7 @@ async function forward(request: Request, { params }: ForwardContext) {
       headers,
       body: request.method === "GET" || request.method === "HEAD" ? undefined : await request.text(),
       cache: "no-store",
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutFor(request.method, path.join("/"))),
     });
   } catch {
     return errorResponse(503, "SERVICE_UNAVAILABLE", GENERIC_ERROR_MESSAGE);

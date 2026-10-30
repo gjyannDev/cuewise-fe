@@ -22,6 +22,21 @@ export function isSessionErrorCode(code: string | undefined) {
   return code !== undefined && SESSION_ERROR_CODES.has(code);
 }
 
+/**
+ * The request got no answer from cuewise-be (browser timeout, network drop, or the /api forwarder's 503 when it
+ * couldn't reach the backend). Unlike a real error response, the backend may still have done the work.
+ */
+export function isNoResponseError(error: unknown) {
+  if (!axios.isAxiosError(error)) {
+    return false;
+  }
+  if (!error.response) {
+    return true;
+  }
+  const body = apiErrorBodySchema.safeParse(error.response.data);
+  return error.response.status === 503 && body.success && body.data.error.code === "SERVICE_UNAVAILABLE";
+}
+
 export type ApiError = {
   status: number | undefined;
   code: string | undefined;

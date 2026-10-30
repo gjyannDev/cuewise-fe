@@ -1,3 +1,4 @@
+import { AxiosError } from "axios";
 import { describe, expect, it } from "vitest";
 
 import { getAnswerErrorResult } from "@/modules/interviews/utils/get-answer-error-result";
@@ -42,9 +43,16 @@ describe("getAnswerErrorResult", () => {
     ],
     ["a 409 with another code", axiosErrorWith(409, errorBody("CONFLICT", "Conflict"))],
     ["a 500", axiosErrorWith(500, errorBody("INTERNAL_ERROR", "Something broke"))],
-    ["a network error", networkError()],
     ["a malformed response (zod error)", new Error("Invalid input: expected object")],
   ])("toasts %s", (_, error) => {
     expect(getAnswerErrorResult(error)).toEqual({ kind: "toast" });
+  });
+
+  it.each([
+    ["a network error", networkError()],
+    ["a timeout", new AxiosError("timeout of 45000ms exceeded", "ECONNABORTED")],
+    ["the /api forwarder's 503", axiosErrorWith(503, errorBody("SERVICE_UNAVAILABLE", "Something went wrong"))],
+  ])("treats %s as an unknown outcome (the answer may have been saved)", (_, error) => {
+    expect(getAnswerErrorResult(error)).toEqual({ kind: "unknown" });
   });
 });

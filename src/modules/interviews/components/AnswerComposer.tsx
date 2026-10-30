@@ -6,6 +6,7 @@ import { type FormEvent, type KeyboardEvent, type Ref, useImperativeHandle } fro
 import { useForm, useWatch } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
+import { useWarnBeforeUnload } from "@/hooks/use-warn-before-unload";
 import { cn } from "@/lib/utils";
 import { TextAreaField } from "@/shared/forms/TextAreaField";
 
@@ -37,6 +38,8 @@ export function AnswerComposer({ isBusy, autoFocus = false, onSubmit, ref }: Ans
     mode: "onTouched",
   });
   const answerLength = useWatch({ control: form.control, name: "answer" }).length;
+  // Unsent text would be lost on reload; nothing is stored, the browser just asks first.
+  useWarnBeforeUnload(answerLength > 0);
 
   useImperativeHandle(ref, () => ({ focus: () => form.setFocus("answer") }), [form]);
 

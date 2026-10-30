@@ -1,5 +1,6 @@
 import { API } from "@/lib/config/axios.client";
 
+import { ANSWER_TIMEOUT_MS, START_TIMEOUT_MS } from "../constants";
 import {
   answerRequestSchema,
   answerResponseSchema,
@@ -19,7 +20,7 @@ class InterviewsService {
   private readonly basePath = "/interviews";
 
   async start(params: StartInterviewRequest): Promise<Interview> {
-    const response = await API.post(this.basePath, params);
+    const response = await API.post(this.basePath, params, { timeout: START_TIMEOUT_MS });
     return interviewSchema.parse(response.data);
   }
 
@@ -31,7 +32,9 @@ class InterviewsService {
   async answer(id: string, params: AnswerRequest): Promise<AnswerResponse> {
     // Parsed on the way out too: the body must be exactly question_id + trimmed answer (cuewise-be forbids extras).
     const body = answerRequestSchema.parse(params);
-    const response = await API.post(`${this.basePath}/${encodeURIComponent(id)}/messages`, body);
+    const response = await API.post(`${this.basePath}/${encodeURIComponent(id)}/messages`, body, {
+      timeout: ANSWER_TIMEOUT_MS,
+    });
     return answerResponseSchema.parse(response.data);
   }
 

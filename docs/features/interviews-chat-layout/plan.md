@@ -299,6 +299,7 @@ B4. **Hook, composer and start wiring** (`use-interview-chat.ts`, new `src/hooks
      - `unknown` toasts `UNCONFIRMED_SEND_MESSAGE` and restores the text.
    - `useWarnBeforeUnload(when)`: registers `beforeunload` only while `when` is true and the guard isn't bypassed. A `useEffect` is right here because it syncs with a browser API.
    - `ActiveInterview` enables the warning while `hasUnsentText` or a send is pending.
+     - As built: the composer calls `useWarnBeforeUnload(answerLength > 0)` itself, since it owns the text, and `ActiveInterview` calls it for `isSending`. Same behavior, no state lifted out of the form.
    - `InterviewsContainer`: a start with a no-response error shows `START_TIMEOUT_MESSAGE`.
    - Test: after (manual: AC7, AC9, AC15, AC16, EC26, EC27, EC31-EC33).
 

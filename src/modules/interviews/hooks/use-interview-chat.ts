@@ -8,6 +8,7 @@ import {
   RESYNC_MESSAGE,
   REVEAL_DELAY_MS,
   THINKING_SLOW_AFTER_MS,
+  UNCONFIRMED_SEND_MESSAGE,
 } from "../constants";
 import { useAnswerInterviewMutation } from "../queries/interviews.queries";
 import type { TranscriptItem } from "../types/interviews.types";
@@ -37,6 +38,7 @@ export function useInterviewChat(sessionId: string, transcript: TranscriptItem[]
   const { buildCallbacks } = useMutationCallbacks({ entityName: "Answer" });
   const resyncCallbacks = buildCallbacks("send", "answer", { errorMessage: RESYNC_MESSAGE });
   const failureCallbacks = buildCallbacks("send", "answer", { errorMessage: "Couldn't send your answer" });
+  const unconfirmedCallbacks = buildCallbacks("send", "answer", { errorMessage: UNCONFIRMED_SEND_MESSAGE });
 
   // TanStack's optimistic-UI-via-variables: the bubble exists only while the request runs, so a failure needs no rollback.
   const pendingAnswer =
@@ -53,8 +55,13 @@ export function useInterviewChat(sessionId: string, transcript: TranscriptItem[]
     const minimumThinking = delay(MIN_THINKING_MS);
 
     try {
-      const response = await answer.mutateAsync({ question_id: question.question_id, answer: text });
-      setHiddenQuestionId(response.current_question?.id);
+      const outcome = await answer.mutateAsync({ question_id: question.question_id, answer: text });
+      if (outcome.kind === "recovered") {
+        // A lost reply that was saved after all: the refetched thread already shows the turn, so no pause and no toast.
+        setThinkingFor(undefined);
+        return;
+      }
+      setHiddenQuestionId(outcome.response.current_question?.id);
       setIsRevealing(true);
       await minimumThinking;
       setThinkingFor(undefined);
@@ -67,7 +74,9 @@ export function useInterviewChat(sessionId: string, transcript: TranscriptItem[]
       if (result.kind === "field") {
         return { message: result.message };
       }
-      (result.kind === "resync" ? resyncCallbacks : failureCallbacks).onError(error);
+      const callbacks =
+        result.kind === "resync" ? resyncCallbacks : result.kind === "unknown" ? unconfirmedCallbacks : failureCallbacks;
+      callbacks.onError(error);
       return {};
     } finally {
       clearTimeout(slowTimer);
@@ -81,6 +90,8 @@ export function useInterviewChat(sessionId: string, transcript: TranscriptItem[]
     /** No new send while the reply is awaited or the next question is being revealed. */
     isBusy: isThinking || isRevealing,
     isRevealing,
+    /** The answer request is in flight (leaving now would drop it). */
+    isSending: answer.isPending,
     /** Something was sent on this screen: new content may take focus (never on page load). */
     hasSent: label !== undefined,
     submit,
