@@ -1,5 +1,7 @@
 "use client";
 
+import { type RefObject, useRef } from "react";
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,26 +11,37 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
 
 type EndInterviewDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
-  /** Classes for the trigger button (full width by default, e.g. compact in the mobile progress bar). */
-  triggerClassName?: string;
+  /** Where focus goes back on "Keep going" (the control that opened the dialog, e.g. the title menu button). */
+  returnFocusTo?: RefObject<HTMLElement | null>;
 };
 
-/** The End interview button plus its confirmation. Radix traps focus and returns it to the button on cancel. */
-export function EndInterviewDialog({ onConfirm, triggerClassName }: EndInterviewDialogProps) {
+/**
+ * Confirmation for ending the interview, opened from the title menu. On confirm the dialog closes first and the
+ * interview ends once it has: otherwise the dialog's focus return and the closing card's own focus would race.
+ */
+export function EndInterviewDialog({ open, onOpenChange, onConfirm, returnFocusTo }: EndInterviewDialogProps) {
+  const confirmed = useRef(false);
+
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline" className={cn("h-11 w-full", triggerClassName)}>
-          End interview
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          if (confirmed.current) {
+            confirmed.current = false;
+            onConfirm();
+            return;
+          }
+          // The menu item that opened the dialog is gone, so return focus to the menu's button instead.
+          returnFocusTo?.current?.focus();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>End this interview?</DialogTitle>
           <DialogDescription>
@@ -41,7 +54,14 @@ export function EndInterviewDialog({ onConfirm, triggerClassName }: EndInterview
               Keep going
             </Button>
           </DialogClose>
-          <Button variant="destructive" className="h-11" onClick={onConfirm}>
+          <Button
+            variant="destructive"
+            className="h-11"
+            onClick={() => {
+              confirmed.current = true;
+              onOpenChange(false);
+            }}
+          >
             End interview
           </Button>
         </DialogFooter>

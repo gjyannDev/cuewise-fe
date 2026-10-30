@@ -1,7 +1,53 @@
 # Implementation: Interviews Chat Layout
 
 ## Status
-Ready for PR (manual browser walkthrough pending: see Tests Pending). Part A committed (c23b36f); Part B green, not committed.
+Ready for PR (manual browser walkthrough pending: see Tests Pending). Part A committed (c23b36f), Part B committed (815c10d); the layout follow-up below is green, not committed.
+
+## Follow-up: conversation title with a menu (after review)
+- The user found End interview next to the details in the bar still out of place. The bar is now the conversation's title, like a chat app's:
+  - the ghost title button "Junior Backend interview ⌄" (level + role + "interview", chosen with the user over "Interview details", which names the menu rather than the conversation) opens a dropdown with a "Details" heading, style · N questions and, while answering, a destructive "End interview" item that opens the confirmation;
+  - quiet "N of M" sits on the right;
+  - the progress line and the standalone End button are gone.
+- Added shadcn `dropdown-menu` via the CLI (`src/components/ui/dropdown-menu.tsx`, no new npm dependency). New `InterviewTitleBar`; deleted `InterviewProgressBar`.
+- `EndInterviewDialog` is now controlled, with no own trigger:
+  - "Keep going", Esc and the close button return focus to the title button (the menu item that opened the dialog no longer exists);
+  - "End interview" closes the dialog first and ends in `onCloseAutoFocus`, so the closing card's heading focus isn't overridden by the dialog's focus return;
+  - the menu is `modal={false}` to avoid the known Radix issue where a modal menu closing under a dialog leaves the page inert.
+- The skeleton header matches (title and "N of M" placeholders).
+- Docs: spec.md (User Flow, progress, UX layout, AC11) and plan.md (Layout & UX Design) updated.
+- Verified: `npx tsc --noEmit` clean, `npm run lint` clean, `npm test` 245/245, production build green. Pending in the browser: keyboard flow (Enter/Space opens the menu, arrows, End item -> dialog, Keep going -> focus on the title, confirm -> focus on the "Interview ended" heading), 360px truncation of the title, dark theme.
+- Suggested commit (can be squashed with the two follow-ups below):
+
+      refactor(interviews): conversation title with a details menu; End interview moves into it
+
+## Follow-up: chat-assistant styling (after review)
+- The user asked to remove the line above the composer, style it like Claude's chat, and make the screen feel less out of place.
+- Composer (`AnswerComposer`):
+  - one rounded card with a borderless textarea, owning the focus ring and error border (`focus-within:`, `has-aria-invalid:`);
+  - a footer row inside: the hint (from `sm`), or the counter once the answer reaches `ANSWER_COUNTER_FROM` (1600), and a round 44px arrow send button labelled "Send answer";
+  - a gradient fade above it instead of the border line.
+- Messages (`ChatMessage`, `TypingIndicator`):
+  - interviewer lines are plain text beside the avatar, with no bubble; your answers are a soft `bg-muted` bubble on the right instead of `bg-primary`;
+  - the thinking label is plain shimmer text beside the avatar.
+- The interview bar and the skeleton lose their bottom border; the skeleton's composer is rounded to match.
+- Docs: spec.md (UX: messages and composer) and plan.md (Layout & UX Design) updated.
+- Verified: `npx tsc --noEmit` clean, `npm run lint` clean, `npm test` 245/245, production build green. The compiled CSS contains the `focus-within`, `has-aria-invalid`, `before:` fade and `bg-linear-to-t` utilities. Visual check pending.
+- Suggested commit (can be squashed with the interview-bar follow-up):
+
+      style(interviews): chat-assistant look for the interview conversation and composer
+
+## Follow-up: interview bar instead of the details panel (after review)
+- The user found the right-hand "Interview details" panel didn't fit a chat. It is replaced by one interview bar above the conversation on every screen size: "Question N of M" + progress line, role · level · style (muted, from `sm`), End interview while answering. The chat is one centered column (`max-w-3xl`).
+- Changed: `InterviewProgressBar` (now takes `position`, adds the progress line and setup details), `InterviewChat` (centered column, no `InterviewColumns`), `InterviewSessionSkeleton` (same frame), `InterviewColumns` (unused `asideClassName` removed; header-aware sticky offset kept for the setup form). Deleted: `InterviewDetailsCard` (no other users; `InterviewDetailList` stays for the setup form).
+- Docs: spec.md (User Flow, progress requirement, UX layout, AC11, conventions) and plan.md (Layout & UX Design) updated.
+- Verified: `npx tsc --noEmit` clean, `npm run lint` clean, `npm test` 245/245, `NODE_ENV=production npm run build` green. Visual check pending (360px, `sm`, desktop, dark theme).
+- Suggested commit:
+
+      refactor(interviews): interview bar above the chat instead of a details side panel
+
+      - One centered chat column on every screen size; the bar shows progress (text + line),
+        role, level and style, and End interview while answering
+      - Remove InterviewDetailsCard and the unused aside option on InterviewColumns
 
 ## Completed Steps
 ### Part A: Chat core (committed: c23b36f)

@@ -18,9 +18,9 @@ export function TypingIndicator({ label }: TypingIndicatorProps) {
   const reduceMotion = useReducedMotion();
 
   return (
-    <div aria-hidden className="flex items-end gap-2">
+    <div aria-hidden className="flex items-start gap-3">
       <InterviewerAvatar />
-      <div className="rounded-2xl rounded-bl-md bg-muted px-4 py-2.5 text-sm">
+      <div className="pt-1 text-sm">
         {reduceMotion ? <span className="text-muted-foreground">{label}</span> : <Shimmer as="span">{label}</Shimmer>}
       </div>
     </div>

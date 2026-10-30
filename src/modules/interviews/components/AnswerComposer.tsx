@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { SendHorizontalIcon } from "lucide-react";
+import { ArrowUpIcon } from "lucide-react";
 import { type FormEvent, type KeyboardEvent, type Ref, useImperativeHandle } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
@@ -10,7 +10,7 @@ import { useWarnBeforeUnload } from "@/hooks/use-warn-before-unload";
 import { cn } from "@/lib/utils";
 import { TextAreaField } from "@/shared/forms/TextAreaField";
 
-import { ANSWER_MAX_LENGTH } from "../constants";
+import { ANSWER_COUNTER_FROM, ANSWER_MAX_LENGTH } from "../constants";
 import type { SendFailure } from "../hooks/use-interview-chat";
 import { answerFormSchema } from "../schemas/interviews.schema";
 import type { AnswerFormValues } from "../types/interviews.types";
@@ -72,42 +72,52 @@ export function AnswerComposer({ isBusy, autoFocus = false, onSubmit, ref }: Ans
   }
 
   return (
-    <form
-      noValidate
-      aria-busy={isBusy}
-      onSubmit={submitUnlessBusy}
-      onKeyDown={sendOnCtrlEnter}
-      className="flex flex-col gap-2 border-t bg-background pt-3 pb-[env(safe-area-inset-bottom)]"
-    >
-      <TextAreaField
-        name="answer"
-        label="Your answer"
-        hideLabel
-        placeholder="Type your answer…"
-        rows={3}
-        readOnly={isBusy}
-        autoFocus={autoFocus}
-        className="max-h-[40dvh] min-h-20 resize-none"
-        register={form.register}
-        error={form.formState.errors.answer?.message}
-        description={
-          <span className={cn("block text-right tabular-nums", answerLength > ANSWER_MAX_LENGTH && "text-destructive")}>
-            {answerLength} / {ANSWER_MAX_LENGTH}
-          </span>
-        }
-      />
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-xs text-muted-foreground">Ctrl/⌘ + Enter to send</p>
-        <Button
-          type="submit"
-          size="lg"
-          className="h-11 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
-          aria-disabled={isBusy}
-        >
-          Send
-          <SendHorizontalIcon aria-hidden data-icon="inline-end" />
-        </Button>
-      </div>
-    </form>
+    // The fade lets the conversation slide softly under the composer instead of being cut by a line.
+    <div className="relative shrink-0 pt-2 pb-[env(safe-area-inset-bottom)] before:pointer-events-none before:absolute before:inset-x-0 before:-top-6 before:h-6 before:bg-linear-to-t before:from-background before:to-transparent">
+      <form
+        noValidate
+        aria-busy={isBusy}
+        onSubmit={submitUnlessBusy}
+        onKeyDown={sendOnCtrlEnter}
+        className="flex flex-col gap-2 rounded-2xl border bg-card px-4 pt-3 pb-2 shadow-sm transition-[color,box-shadow] focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 has-aria-invalid:border-destructive has-aria-invalid:ring-destructive/20"
+      >
+        <TextAreaField
+          name="answer"
+          label="Your answer"
+          hideLabel
+          placeholder="Type your answer…"
+          rows={2}
+          readOnly={isBusy}
+          autoFocus={autoFocus}
+          // The box above draws the border and focus ring; the field itself is bare text.
+          className="max-h-[40dvh] min-h-12 resize-none rounded-none border-0 bg-transparent px-0 py-1 shadow-none focus-visible:ring-0 aria-invalid:ring-0 dark:bg-transparent"
+          register={form.register}
+          error={form.formState.errors.answer?.message}
+        />
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs text-muted-foreground">
+            {answerLength >= ANSWER_COUNTER_FROM ? (
+              <span className={cn("tabular-nums", answerLength > ANSWER_MAX_LENGTH && "text-destructive")}>
+                {answerLength} / {ANSWER_MAX_LENGTH}
+              </span>
+            ) : (
+              <span className="hidden sm:inline">Ctrl/⌘ + Enter to send</span>
+            )}
+          </p>
+          <Button
+            type="submit"
+            size="icon"
+            aria-label="Send answer"
+            className={cn(
+              "size-11 shrink-0 rounded-full aria-disabled:cursor-not-allowed aria-disabled:opacity-50",
+              answerLength === 0 && "opacity-50",
+            )}
+            aria-disabled={isBusy}
+          >
+            <ArrowUpIcon aria-hidden className="size-5" />
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 }

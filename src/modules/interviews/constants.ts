@@ -14,6 +14,8 @@ export const MIN_QUESTION_COUNT = 1;
 export const MAX_QUESTION_COUNT = 10;
 export const JOB_DESCRIPTION_MAX_LENGTH = 2000;
 export const ANSWER_MAX_LENGTH = 2000;
+/** The composer shows its character counter only from here on, so it doesn't distract while writing. */
+export const ANSWER_COUNTER_FROM = 1600;
 
 /** cuewise-be's 409 codes for an answer to a question that is no longer current: the screen resyncs with GET. */
 export const RESYNC_ERROR_CODES = ["QUESTION_NOT_CURRENT", "SESSION_NOT_IN_PROGRESS"] as const;

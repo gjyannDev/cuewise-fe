@@ -314,16 +314,26 @@ B5. **Verify Part B.**
 
 ## Layout & UX Design
 - **Chat column:** it fills the viewport below the sticky header; only the thread scrolls.
-  - From `xl`: the thread with the composer at the bottom, and the details card (progress and End interview) in the right column.
-  - Below `xl`: a compact progress bar above the thread, and no details card.
+  - (Revised after review; replaces the `xl` details card and the below-`xl` compact bar.) One centered column (`max-w-3xl`) on every screen size, no side panel.
+  - The column holds `InterviewTitleBar` on top (revised twice; replaces `InterviewProgressBar`). It has:
+    - a ghost title button, "Level Role interview ⌄" (e.g. "Junior Backend interview"), opening a non-modal shadcn `DropdownMenu` whose label reads "Details" / style · N questions;
+    - the menu content: the details label, a separator and a destructive "End interview" item while answering;
+    - quiet "N of M" text on the right.
+  - `EndInterviewDialog` is now controlled (`open`/`onOpenChange`, no own trigger). On "Keep going" its `onCloseAutoFocus` returns focus to the title button. On confirm it calls `onConfirm` only after the close, so the closing card's heading keeps focus.
+  - `InterviewDetailsCard` was deleted; `InterviewColumns` stays for the setup form only.
   - With the Android keyboard open, the column shrinks. On iOS the page may pan, but the composer stays visible.
-- **Bubbles:**
-  - interviewer bubbles use `bg-muted`; candidate bubbles use `bg-primary` with `text-primary-foreground`; all are `rounded-2xl`;
-  - spacing is 12px between bubbles and 24px between question groups;
+- **Messages (revised after review, chat-assistant style):**
+  - interviewer lines are plain text beside the avatar, with no bubble;
+  - candidate answers sit in a `bg-muted` `rounded-2xl` bubble on the right;
+  - spacing is 16px between lines and 24px more above each question;
   - labels use `text-xs text-muted-foreground`;
-  - a pending bubble is at reduced opacity;
-  - theme tokens only.
-- **Composer card:** a top border; the hint "Ctrl/⌘ + Enter to send"; a right-aligned counter; **Send** at least 44px tall; bottom safe-area padding.
+  - a pending answer is at reduced opacity;
+  - theme tokens only, no divider lines.
+- **Composer card (revised):**
+  - one rounded card (`rounded-2xl`, border, `bg-card`, `shadow-sm`) owns the focus ring and error border;
+  - inside it, a borderless textarea and a footer row: the hint or a counter from 1600 characters, and a round 44px arrow send button;
+  - a gradient fade above the card instead of a top border;
+  - bottom safe-area padding.
 - **Closing card, thread error and stuck notice:** each takes the composer's place at full width.
 
 ## Affected Files & Patterns

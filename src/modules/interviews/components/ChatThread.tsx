@@ -44,8 +44,8 @@ export function ChatThread({ items, total, thinkingLabel, onJump }: ChatThreadPr
       aria-label="Conversation"
       className="min-h-0"
     >
-      <ConversationContent className="gap-3 px-0 py-4 sm:px-2">
-        <div role="log" aria-live="polite" aria-label="Interview conversation" className="flex flex-col gap-3">
+      <ConversationContent className="gap-4 px-0 pt-4 pb-8 sm:px-2">
+        <div role="log" aria-live="polite" aria-label="Interview conversation" className="flex flex-col gap-4">
           {items.map((item) => (
             <ChatMessage
               key={item.key}
