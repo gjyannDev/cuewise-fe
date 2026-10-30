@@ -1,6 +1,5 @@
 import { FlagIcon, SparklesIcon } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -14,8 +13,8 @@ type InterviewEndedPanelProps = {
 };
 
 /**
- * Shown after End interview. ponytail: the "Abandoned" status is local to this screen until cuewise-be
- * has an end endpoint; then it should come from session.status and the feedback from the API.
+ * Shown after End interview. ponytail: client-only until cuewise-be has an end endpoint, so it claims no status
+ * (the session is still in_progress on the backend); then the status and early feedback should come from the API.
  */
 export function InterviewEndedPanel({ session, onStartNew }: InterviewEndedPanelProps) {
   return (
@@ -25,9 +24,8 @@ export function InterviewEndedPanel({ session, onStartNew }: InterviewEndedPanel
           <CardTitle className="flex flex-wrap items-center gap-3">
             <FlagIcon aria-hidden className="size-5 text-muted-foreground" />
             <h2 className="font-display text-lg font-semibold">Interview ended</h2>
-            <Badge variant="destructive">Abandoned</Badge>
           </CardTitle>
-          <CardDescription>You ended this interview before the last question.</CardDescription>
+          <CardDescription>Your answers so far are saved.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex gap-3 rounded-lg border border-dashed bg-muted/50 p-4">

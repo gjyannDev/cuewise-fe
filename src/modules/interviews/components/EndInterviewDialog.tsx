@@ -29,8 +29,7 @@ export function EndInterviewDialog({ onConfirm }: EndInterviewDialogProps) {
         <DialogHeader>
           <DialogTitle>End this interview?</DialogTitle>
           <DialogDescription>
-            The interview will be marked as abandoned and your progress so far won&apos;t be saved. You can start a new
-            one any time.
+            Your answers so far are saved. You&apos;ll leave this interview and can start a new one any time.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>

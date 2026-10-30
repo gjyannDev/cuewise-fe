@@ -5,12 +5,19 @@ export const ROLES = ["frontend", "backend", "fullstack", "mobile", "data"] as c
 export const LEVELS = ["intern", "junior", "mid", "senior"] as const;
 export const INTERVIEW_TYPES = ["technical", "behavioral", "mixed"] as const;
 export const QUESTION_CATEGORIES = ["technical", "behavioral"] as const;
-export const SESSION_STATUSES = ["in_progress", "abandoned"] as const;
+export const SESSION_STATUSES = ["in_progress", "abandoned", "completed"] as const;
 
 export const MIN_QUESTION_COUNT = 1;
 export const MAX_QUESTION_COUNT = 10;
 export const JOB_DESCRIPTION_MAX_LENGTH = 2000;
 export const ANSWER_MAX_LENGTH = 2000;
+
+/** cuewise-be's 409 codes for an answer to a question that is no longer current: the screen resyncs with GET. */
+export const RESYNC_ERROR_CODES = ["QUESTION_NOT_CURRENT", "SESSION_NOT_IN_PROGRESS"] as const;
+
+export const RESYNC_MESSAGE = "This question was already answered. Showing where you are now.";
+/** Shown on the completed screen when the closing reaction is gone (reload or revisit). */
+export const COMPLETED_FALLBACK_TEXT = "You've answered every question. Thanks for practicing with Cuewise.";
 
 export const ROLE_LABELS: Record<(typeof ROLES)[number], string> = {
   frontend: "Frontend",

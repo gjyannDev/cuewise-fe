@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_START_VALUES } from "@/modules/interviews/constants";
 import {
   answerFormSchema,
+  answerRequestSchema,
+  answerResponseSchema,
   interviewSchema,
   sessionParamSchema,
   startInterviewFormSchema,
@@ -111,6 +113,12 @@ describe("interviewSchema", () => {
 
     expect(issuesFor(result).sort()).toEqual(["session.id", "session.role"]);
   });
+
+  it("parses a completed interview, which has no current question", () => {
+    const completed = { session: { ...response.session, status: "completed" }, current_question: null };
+
+    expect(interviewSchema.parse(completed)).toEqual(completed);
+  });
 });
 
 describe("answerFormSchema", () => {
@@ -121,6 +129,58 @@ describe("answerFormSchema", () => {
   it("accepts 2000 characters and rejects 2001", () => {
     expect(answerFormSchema.safeParse({ answer: "a".repeat(2000) }).success).toBe(true);
     expect(issuesFor(answerFormSchema.safeParse({ answer: "a".repeat(2001) }))).toEqual(["answer"]);
+  });
+});
+
+describe("answerRequestSchema", () => {
+  it("outputs exactly the POST /messages body with the answer trimmed", () => {
+    expect(answerRequestSchema.parse({ question_id: QUESTION_ID, answer: "  I would use a queue.  ", extra: 1 })).toEqual({
+      question_id: QUESTION_ID,
+      answer: "I would use a queue.",
+    });
+  });
+
+  it.each(["", "   ", "a".repeat(2001)])("rejects an answer the backend would reject (%#)", (answer) => {
+    expect(issuesFor(answerRequestSchema.safeParse({ question_id: QUESTION_ID, answer }))).toEqual(["answer"]);
+  });
+
+  it("accepts a 2000-character answer and rejects a non-UUID question id", () => {
+    expect(answerRequestSchema.safeParse({ question_id: QUESTION_ID, answer: "a".repeat(2000) }).success).toBe(true);
+    expect(issuesFor(answerRequestSchema.safeParse({ question_id: "q1", answer: "Yes" }))).toEqual(["question_id"]);
+  });
+});
+
+describe("answerResponseSchema", () => {
+  const session = {
+    id: SESSION_ID,
+    role: "frontend",
+    level: "senior",
+    interview_type: "technical",
+    question_count: 2,
+    job_description: null,
+    status: "in_progress",
+    created_at: "2026-10-28T09:00:00Z",
+  };
+  const reaction = { id: "019a2b3c-4d5e-7f60-8a9b-0c1d2e3f4a5b", text: "Thanks, that gives me a clear picture." };
+
+  it("parses a mid-interview answer with the next question", () => {
+    const response = {
+      session,
+      reaction,
+      current_question: { id: QUESTION_ID, position: 2, text: "How would you cache this?", category: "technical" },
+    };
+
+    expect(answerResponseSchema.parse(response)).toEqual(response);
+  });
+
+  it("parses the final answer: completed session and no next question", () => {
+    const response = { session: { ...session, status: "completed" }, reaction, current_question: null };
+
+    expect(answerResponseSchema.parse(response)).toEqual(response);
+  });
+
+  it("rejects a response without a reaction", () => {
+    expect(issuesFor(answerResponseSchema.safeParse({ session, current_question: null }))).toEqual(["reaction"]);
   });
 });
 

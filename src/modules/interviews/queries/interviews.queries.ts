@@ -1,7 +1,8 @@
 import { skipToken, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { interviewsService } from "../services/interviews.services";
-import type { StartInterviewRequest } from "../types/interviews.types";
+import type { AnswerRequest, Interview, StartInterviewRequest } from "../types/interviews.types";
+import { getAnswerErrorResult } from "../utils/get-answer-error-result";
 import { interviewKeys } from "./interviews.keys";
 
 export function useStartInterviewMutation() {
@@ -20,5 +21,23 @@ export function useInterviewQuery(id: string | undefined) {
   return useQuery({
     queryKey: interviewKeys.detail(id ?? ""),
     queryFn: id ? () => interviewsService.get(id) : skipToken,
+  });
+}
+
+export function useAnswerInterviewMutation(id: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationKey: interviewKeys.answer(id),
+    mutationFn: (params: AnswerRequest) => interviewsService.answer(id, params),
+    // The backend has already moved on, so the cache does too; the reaction is shown separately until dismissed.
+    onSuccess: ({ session, current_question }) =>
+      queryClient.setQueryData<Interview>(interviewKeys.detail(id), { session, current_question }),
+    // Answered elsewhere, completed, or gone: refetch so the screen shows what the backend says is current.
+    onError: (error) => {
+      if (getAnswerErrorResult(error).kind === "resync") {
+        return queryClient.invalidateQueries({ queryKey: interviewKeys.detail(id) });
+      }
+    },
   });
 }

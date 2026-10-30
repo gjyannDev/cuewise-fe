@@ -4,13 +4,16 @@ import { Progress } from "@/components/ui/progress";
 
 import { INTERVIEW_TYPE_LABELS } from "../constants";
 import type { InterviewQuestion } from "../types/interviews.types";
+import { focusOnMount } from "../utils/focus-on-mount";
 
 type QuestionCardProps = {
   question: InterviewQuestion;
   total: number;
+  /** Move focus to the question when it appears after Next question (not on page load). Key the card by question. */
+  autoFocus?: boolean;
 };
 
-export function QuestionCard({ question, total }: QuestionCardProps) {
+export function QuestionCard({ question, total, autoFocus = false }: QuestionCardProps) {
   const progressLabel = `Question ${question.position} of ${total}`;
 
   return (
@@ -28,7 +31,11 @@ export function QuestionCard({ question, total }: QuestionCardProps) {
       </CardHeader>
       <CardContent>
         {/* Plain text on purpose: question text is never rendered as HTML. */}
-        <h2 className="max-w-prose font-display text-xl leading-snug font-semibold text-balance sm:text-2xl">
+        <h2
+          ref={autoFocus ? focusOnMount : undefined}
+          tabIndex={-1}
+          className="max-w-prose font-display text-xl leading-snug font-semibold text-balance outline-none sm:text-2xl"
+        >
           {question.text}
         </h2>
       </CardContent>

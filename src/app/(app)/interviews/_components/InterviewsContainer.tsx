@@ -10,7 +10,6 @@ import { parseApiError } from "@/lib/config/api.helper";
 import { InterviewConfigForm } from "@/modules/interviews/components/InterviewConfigForm";
 import { InterviewEndedPanel } from "@/modules/interviews/components/InterviewEndedPanel";
 import { InterviewMessageCard } from "@/modules/interviews/components/InterviewMessageCard";
-import { InterviewSession } from "@/modules/interviews/components/InterviewSession";
 import { InterviewSessionSkeleton } from "@/modules/interviews/components/InterviewSessionSkeleton";
 import { INTERVIEWS_ROUTE } from "@/modules/interviews/constants";
 import { useInterviewQuery, useStartInterviewMutation } from "@/modules/interviews/queries/interviews.queries";
@@ -20,6 +19,8 @@ import type {
   StartInterviewRequest,
 } from "@/modules/interviews/types/interviews.types";
 import { getStartErrorResult } from "@/modules/interviews/utils/get-start-error-result";
+
+import { ActiveInterview } from "./ActiveInterview";
 
 type InterviewsContainerProps = {
   sessionParam: SessionParam;
@@ -101,5 +102,12 @@ export function InterviewsContainer({ sessionParam }: InterviewsContainerProps) 
   if (endedSessionId === sessionId) {
     return <InterviewEndedPanel session={interview.data.session} onStartNew={goToSetup} />;
   }
-  return <InterviewSession interview={interview.data} onEnd={() => setEndedSessionId(sessionId)} />;
+  return (
+    <ActiveInterview
+      key={sessionId}
+      interview={interview.data}
+      onEnd={() => setEndedSessionId(sessionId)}
+      onStartNew={goToSetup}
+    />
+  );
 }
