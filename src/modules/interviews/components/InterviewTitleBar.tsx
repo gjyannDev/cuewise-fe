@@ -20,8 +20,8 @@ import { EndInterviewDialog } from "./EndInterviewDialog";
 
 type InterviewTitleBarProps = {
   session: InterviewSession;
-  /** The last visible question's position. */
-  position: number;
+  /** The last visible question's main number (follow-ups keep their main question's). */
+  mainNumber: number;
   /** Omit once the interview is over: the menu then only shows the details. */
   onEnd?: () => void;
 };
@@ -30,7 +30,7 @@ type InterviewTitleBarProps = {
  * The conversation's title, like a chat app's: the interview it is, a menu with its details and End interview
  * (a rare, leaving action, one deliberate step away), and quiet progress on the right.
  */
-export function InterviewTitleBar({ session, position, onEnd }: InterviewTitleBarProps) {
+export function InterviewTitleBar({ session, mainNumber, onEnd }: InterviewTitleBarProps) {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const titleButton = useRef<HTMLButtonElement>(null);
   // Named the way you'd say it out loud ("Junior Backend interview"); the style and length are in the menu.
@@ -67,7 +67,7 @@ export function InterviewTitleBar({ session, position, onEnd }: InterviewTitleBa
 
       <p className="shrink-0 text-sm text-muted-foreground tabular-nums">
         <span className="sr-only">Question </span>
-        {position} of {session.question_count}
+        {mainNumber} of {session.question_count}
       </p>
 
       {onEnd && (

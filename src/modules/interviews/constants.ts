@@ -5,6 +5,8 @@ export const ROLES = ["frontend", "backend", "fullstack", "mobile", "data"] as c
 export const LEVELS = ["intern", "junior", "mid", "senior"] as const;
 export const INTERVIEW_TYPES = ["technical", "behavioral", "mixed"] as const;
 export const QUESTION_CATEGORIES = ["technical", "behavioral"] as const;
+/** A main question counts toward `question_count`; a follow-up digs into the answer to its main question. */
+export const QUESTION_KINDS = ["main", "follow_up"] as const;
 export const SESSION_STATUSES = ["in_progress", "abandoned", "completed"] as const;
 /** Who said a transcript line, and what it is (GET /interviews/{id}/messages). */
 export const TRANSCRIPT_ROLES = ["interviewer", "candidate"] as const;
@@ -40,6 +42,9 @@ export const THINKING_SLOW_AFTER_MS = 5000;
 export const MIN_THINKING_MS = 500;
 /** A beat between the reaction and the next question (or the completed card). */
 export const REVEAL_DELAY_MS = 600;
+
+/** The caption above a follow-up, where a main question shows "Question N of M". */
+export const FOLLOW_UP_CAPTION = "Follow-up";
 
 export const THREAD_ERROR_MESSAGE = "Couldn't load the conversation.";
 export const STALE_THREAD_MESSAGE = "Couldn't load the latest question.";

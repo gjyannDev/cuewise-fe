@@ -8,6 +8,7 @@ import {
   MAX_QUESTION_COUNT,
   MIN_QUESTION_COUNT,
   QUESTION_CATEGORIES,
+  QUESTION_KINDS,
   ROLES,
   SESSION_STATUSES,
   TRANSCRIPT_KINDS,
@@ -52,11 +53,22 @@ const sessionSchema = z.object({
   created_at: z.string(),
 });
 
+/**
+ * What every question carries, on its own and on each transcript line about it. `question_kind` says whether it is a
+ * main question or a follow-up; `main_number` is the main question it belongs to (what "Question N of M" counts),
+ * while `position` only orders the rows (it counts follow-ups too).
+ */
+const questionKindFields = {
+  question_kind: z.enum(QUESTION_KINDS),
+  main_number: z.number().int(),
+};
+
 const questionSchema = z.object({
   id: z.uuid(),
   position: z.number().int(),
   text: z.string(),
   category: z.enum(QUESTION_CATEGORIES),
+  ...questionKindFields,
 });
 
 /** GET /interviews/{id} and POST /interviews. `current_question` is null once the interview is completed. */
@@ -76,9 +88,12 @@ export const answerFormSchema = z.object({
 /** The POST /interviews/{id}/messages body. cuewise-be forbids extra keys, so unknown ones are stripped. */
 export const answerRequestSchema = answerFormSchema.extend({ question_id: z.uuid() });
 
-/** POST /interviews/{id}/messages. The reaction is a predefined acknowledgement, never an evaluation. */
+/**
+ * POST /interviews/{id}/messages. The reaction is a predefined acknowledgement, never an evaluation. It is null when
+ * the next question is a follow-up (the interviewer digs deeper instead of moving on); the key is always sent.
+ */
 export const answerResponseSchema = interviewSchema.extend({
-  reaction: z.object({ id: z.uuid(), text: z.string() }),
+  reaction: z.object({ id: z.uuid(), text: z.string() }).nullable(),
 });
 
 /** One line of GET /interviews/{id}/messages: each shown question, then its answer and reaction once they exist. */
@@ -91,6 +106,7 @@ export const transcriptItemSchema = z.object({
   text: z.string(),
   // Null for questions: they are stored when the interview starts, not when they are shown.
   created_at: z.string().nullable(),
+  ...questionKindFields,
 });
 
 export const transcriptSchema = z.object({ items: z.array(transcriptItemSchema) });

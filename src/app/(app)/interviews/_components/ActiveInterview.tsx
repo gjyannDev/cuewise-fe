@@ -91,7 +91,7 @@ export function ActiveInterview({
     <InterviewChat
       session={session}
       items={chat.view.items}
-      position={chat.view.position}
+      mainNumber={chat.view.mainNumber}
       thinkingLabel={chat.thinkingLabel}
       footer={footer}
       onEnd={canEnd ? onEnd : undefined}

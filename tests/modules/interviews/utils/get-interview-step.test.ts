@@ -18,6 +18,8 @@ const question: NonNullable<Interview["current_question"]> = {
   position: 2,
   text: "Tell me about a project you led.",
   category: "behavioral",
+  question_kind: "main",
+  main_number: 2,
 };
 
 describe("getInterviewStep", () => {

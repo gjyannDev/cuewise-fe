@@ -3,7 +3,7 @@ import type { Ref } from "react";
 import { cn } from "@/lib/utils";
 
 import type { ThreadItem } from "../types/interviews.types";
-import { formatQuestionPosition } from "../utils/format-question-count";
+import { formatQuestionCaption } from "../utils/format-question-count";
 import { InterviewerAvatar } from "./InterviewerAvatar";
 
 type ChatMessageProps = {
@@ -15,8 +15,8 @@ type ChatMessageProps = {
 
 /**
  * One line of the conversation, as plain text (never HTML). Like a chat assistant: the interviewer's lines are plain
- * text beside its avatar, the candidate's answers sit in a soft bubble on the right. Each question starts a new
- * group, so it gets extra space above.
+ * text beside its avatar, the candidate's answers sit in a soft bubble on the right. Each main question starts a new
+ * group, so it gets extra space above; a follow-up stays in its main question's group.
  */
 export function ChatMessage({ item, total, ref }: ChatMessageProps) {
   if (item.role === "candidate") {
@@ -24,7 +24,7 @@ export function ChatMessage({ item, total, ref }: ChatMessageProps) {
       <div ref={ref} className="flex justify-end">
         <p
           className={cn(
-            "max-w-[85%] min-w-0 rounded-2xl bg-muted px-4 py-2.5 whitespace-pre-wrap [overflow-wrap:anywhere] transition-opacity",
+            "max-w-[85%] min-w-0 rounded-2xl bg-muted px-4 py-2.5 whitespace-pre-wrap wrap-anywhere transition-opacity",
             item.pending && "opacity-60",
           )}
         >
@@ -37,15 +37,25 @@ export function ChatMessage({ item, total, ref }: ChatMessageProps) {
   }
 
   const isQuestion = item.kind === "question";
+  const startsGroup = isQuestion && item.question_kind === "main";
   return (
-    <div ref={ref} className={cn("flex items-start gap-3", isQuestion && "mt-6 first:mt-0")}>
+    <div
+      ref={ref}
+      className={cn("flex items-start gap-3", startsGroup && "mt-6 first:mt-0")}
+    >
       <InterviewerAvatar />
       <div className="flex min-w-0 flex-1 flex-col gap-1 pt-0.5">
-        {isQuestion && <p className="text-xs font-medium text-muted-foreground">{formatQuestionPosition(item.position, total)}</p>}
+        {isQuestion && (
+          <p className="text-xs font-medium text-muted-foreground">
+            {formatQuestionCaption(item, total)}
+          </p>
+        )}
         <p
           className={cn(
-            "whitespace-pre-wrap [overflow-wrap:anywhere]",
-            isQuestion ? "text-base leading-relaxed" : "text-sm text-muted-foreground",
+            "whitespace-pre-wrap wrap-anywhere",
+            isQuestion
+              ? "text-base leading-relaxed"
+              : "text-sm text-muted-foreground",
           )}
         >
           <span className="sr-only">Interviewer: </span>

@@ -69,8 +69,11 @@ export type ThreadItem = TranscriptItem & { key: string; pending?: boolean };
 /** What the thread shows, plus what the screen derives from it. */
 export type ThreadView = {
   items: ThreadItem[];
-  /** Position of the last visible question: the progress shown in "Question N of M". */
-  position: number;
+  /**
+   * Main number of the last visible question: the progress shown as "N of M". A follow-up keeps its main question's
+   * number, so this never exceeds `question_count` (unlike `position`, which counts follow-ups too).
+   */
+  mainNumber: number;
   /** The last question without an answer, from the whole thread (even while hidden): what the composer answers. */
   openQuestion?: TranscriptItem;
 };

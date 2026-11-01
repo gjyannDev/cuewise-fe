@@ -29,6 +29,8 @@ export function buildThreadView(
       id: `${pendingAnswer.questionId}-answer`,
       question_id: pendingAnswer.questionId,
       position: question?.position ?? 0,
+      question_kind: question?.question_kind ?? "main",
+      main_number: question?.main_number ?? 0,
       role: "candidate",
       kind: "answer",
       text: pendingAnswer.text,
@@ -40,5 +42,5 @@ export function buildThreadView(
   const visibleQuestions = items.filter((item) => item.kind === "question");
   const lastQuestion = transcript.findLast((item) => item.kind === "question");
   const openQuestion = lastQuestion && !isStored(lastQuestion.question_id) ? lastQuestion : undefined;
-  return { items, position: visibleQuestions.at(-1)?.position ?? 0, openQuestion };
+  return { items, mainNumber: visibleQuestions.at(-1)?.main_number ?? 0, openQuestion };
 }

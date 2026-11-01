@@ -14,6 +14,10 @@ import {
 const issuesFor = (result: { success: boolean; error?: { issues: { path: PropertyKey[] }[] } }) =>
   result.error?.issues.map((issue) => issue.path.join(".")) ?? [];
 
+/** A copy without the fields cuewise-be added for follow-ups, as an older backend would send it. */
+const withoutQuestionKind = (value: object) =>
+  Object.fromEntries(Object.entries(value).filter(([key]) => key !== "question_kind" && key !== "main_number"));
+
 const SESSION_ID = "0b7c2f4e-5d1a-4c3b-9e8f-1a2b3c4d5e6f";
 const QUESTION_ID = "6f5e4d3c-2b1a-4f9e-8d7c-6b5a4f3e2d1c";
 
@@ -99,11 +103,40 @@ describe("interviewSchema", () => {
       position: 1,
       text: "Explain the difference between a process and a thread.",
       category: "technical",
+      question_kind: "main",
+      main_number: 1,
     },
   };
 
   it("parses a POST /interviews response", () => {
     expect(interviewSchema.parse(response)).toEqual(response);
+  });
+
+  it("parses a follow-up as the current question", () => {
+    const followUp = {
+      ...response,
+      current_question: { ...response.current_question, position: 2, question_kind: "follow_up", main_number: 1 },
+    };
+
+    expect(interviewSchema.parse(followUp)).toEqual(followUp);
+  });
+
+  it("rejects a question without question_kind or main_number (no silent defaults)", () => {
+    const bare = withoutQuestionKind(response.current_question);
+
+    expect(issuesFor(interviewSchema.safeParse({ ...response, current_question: bare })).sort()).toEqual([
+      "current_question.main_number",
+      "current_question.question_kind",
+    ]);
+  });
+
+  it("rejects a question kind the backend doesn't send", () => {
+    const result = interviewSchema.safeParse({
+      ...response,
+      current_question: { ...response.current_question, question_kind: "probe" },
+    });
+
+    expect(issuesFor(result)).toEqual(["current_question.question_kind"]);
   });
 
   it("rejects a non-UUID session id and an unknown role", () => {
@@ -168,7 +201,14 @@ describe("answerResponseSchema", () => {
     const response = {
       session,
       reaction,
-      current_question: { id: QUESTION_ID, position: 2, text: "How would you cache this?", category: "technical" },
+      current_question: {
+        id: QUESTION_ID,
+        position: 2,
+        text: "How would you cache this?",
+        category: "technical",
+        question_kind: "main",
+        main_number: 2,
+      },
     };
 
     expect(answerResponseSchema.parse(response)).toEqual(response);
@@ -182,6 +222,27 @@ describe("answerResponseSchema", () => {
 
   it("rejects a response without a reaction", () => {
     expect(issuesFor(answerResponseSchema.safeParse({ session, current_question: null }))).toEqual(["reaction"]);
+  });
+
+  it("accepts a null reaction (cuewise-be sends none when the next question is a follow-up)", () => {
+    expect(answerResponseSchema.safeParse({ session, reaction: null, current_question: null }).success).toBe(true);
+  });
+
+  it("parses a follow-up turn: no reaction, a follow-up of the same main question next", () => {
+    const response = {
+      session,
+      reaction: null,
+      current_question: {
+        id: QUESTION_ID,
+        position: 2,
+        text: "Which cache would you pick, and why?",
+        category: "technical",
+        question_kind: "follow_up",
+        main_number: 1,
+      },
+    };
+
+    expect(answerResponseSchema.parse(response)).toEqual(response);
   });
 });
 
@@ -203,6 +264,8 @@ describe("transcriptSchema", () => {
     kind: "question",
     text: "Tell me about a time you disagreed with a teammate.",
     created_at: "2026-10-30T09:00:00Z",
+    question_kind: "main",
+    main_number: 1,
   };
   const answer = {
     id: answerId,
@@ -212,6 +275,8 @@ describe("transcriptSchema", () => {
     kind: "answer",
     text: "We talked it through.",
     created_at: "2026-10-30T09:01:00Z",
+    question_kind: "main",
+    main_number: 1,
   };
   const reaction = { ...answer, id: reactionId, role: "interviewer", kind: "reaction", text: "Thanks for sharing that." };
 
@@ -228,6 +293,25 @@ describe("transcriptSchema", () => {
   it("rejects a kind or role the backend doesn't send", () => {
     expect(issuesFor(transcriptSchema.safeParse({ items: [{ ...answer, kind: "feedback" }] }))).toEqual(["items.0.kind"]);
     expect(issuesFor(transcriptSchema.safeParse({ items: [{ ...answer, role: "system" }] }))).toEqual(["items.0.role"]);
+  });
+
+  it("parses a follow-up thread: main question and answer with no reaction, then the follow-up", () => {
+    const followUp = { ...question, id: answerId, question_id: answerId, position: 2, question_kind: "follow_up" };
+    const payload = { items: [question, answer, followUp] };
+
+    expect(transcriptSchema.parse(payload)).toEqual(payload);
+  });
+
+  it("rejects an item without question_kind or main_number, or with an unknown question kind", () => {
+    const bare = withoutQuestionKind(answer);
+
+    expect(issuesFor(transcriptSchema.safeParse({ items: [bare] })).sort()).toEqual([
+      "items.0.main_number",
+      "items.0.question_kind",
+    ]);
+    expect(issuesFor(transcriptSchema.safeParse({ items: [{ ...answer, question_kind: "probe" }] }))).toEqual([
+      "items.0.question_kind",
+    ]);
   });
 
   it("rejects a response without items", () => {

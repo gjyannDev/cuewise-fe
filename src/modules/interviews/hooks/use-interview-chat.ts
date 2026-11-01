@@ -48,7 +48,7 @@ export function useInterviewChat(sessionId: string, transcript: TranscriptItem[]
   const view = buildThreadView(transcript, { pendingAnswer, hiddenQuestionId, hiddenReactionQuestionId: thinkingFor });
 
   async function submit(question: TranscriptItem, text: string): Promise<SendFailure | void> {
-    setLabel(pickThinkingLabel(label, question.position === questionCount));
+    setLabel(pickThinkingLabel(label, question, questionCount));
     setIsSlow(false);
     setThinkingFor(question.question_id);
     const slowTimer = setTimeout(() => setIsSlow(true), THINKING_SLOW_AFTER_MS);

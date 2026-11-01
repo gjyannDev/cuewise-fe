@@ -27,6 +27,8 @@ const interview = {
     position: 1,
     text: "Tell me about a time you disagreed with a teammate.",
     category: "behavioral",
+    question_kind: "main",
+    main_number: 1,
   },
 } as const;
 
@@ -61,13 +63,37 @@ describe("interviewsService", () => {
     const turn = {
       session: interview.session,
       reaction: { id: "019a2b3c-4d5e-7f60-8a9b-0c1d2e3f4a5b", text: "Thanks for sharing that." },
-      current_question: { ...interview.current_question, id: "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d", position: 2 },
+      current_question: {
+        ...interview.current_question,
+        id: "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+        position: 2,
+        main_number: 2,
+      },
     };
     post.mockResolvedValue(ok(turn, 201));
     const body = { question_id: interview.current_question.id, answer: "We talked it through." };
 
     await expect(interviewsService.answer(ID, body)).resolves.toEqual(turn);
     expect(post).toHaveBeenCalledWith(`/interviews/${ID}/messages`, body, { timeout: ANSWER_TIMEOUT_MS });
+  });
+
+  it("answer resolves a follow-up turn (no reaction), so the screen never reports a send error for it", async () => {
+    const turn = {
+      session: interview.session,
+      reaction: null,
+      current_question: {
+        ...interview.current_question,
+        id: "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+        position: 2,
+        question_kind: "follow_up",
+        main_number: 1,
+      },
+    };
+    post.mockResolvedValue(ok(turn, 201));
+
+    await expect(
+      interviewsService.answer(ID, { question_id: interview.current_question.id, answer: "I'd use Redis." }),
+    ).resolves.toEqual(turn);
   });
 
   it("answer sends a trimmed answer and no extra keys (cuewise-be rejects them)", async () => {
@@ -104,6 +130,8 @@ describe("interviewsService", () => {
           kind: "question",
           text: interview.current_question.text,
           created_at: null,
+          question_kind: "main",
+          main_number: 1,
         },
       ],
     };
