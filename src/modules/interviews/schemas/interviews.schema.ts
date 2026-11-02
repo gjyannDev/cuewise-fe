@@ -13,6 +13,7 @@ import {
   SESSION_STATUSES,
   TRANSCRIPT_KINDS,
   TRANSCRIPT_ROLES,
+  TURN_PHASES,
 } from "../constants";
 
 export const roleSchema = z.enum(ROLES, { error: "Choose a role" });
@@ -110,6 +111,19 @@ export const transcriptItemSchema = z.object({
 });
 
 export const transcriptSchema = z.object({ items: z.array(transcriptItemSchema) });
+
+/**
+ * The `data` of each event of POST /interviews/{id}/messages/stream, by event name (mirrors cuewise-be's
+ * `StreamEvent`; keep in step). `done` carries the saved turn and `error` a generic failure; both end the stream.
+ */
+export const answerStreamEventSchemas = {
+  status: z.object({ phase: z.enum(TURN_PHASES) }),
+  reaction: z.object({ id: z.uuid(), text: z.string() }),
+  "question.delta": z.object({ text: z.string() }),
+  reset: z.object({}),
+  done: answerResponseSchema,
+  error: z.object({ code: z.string(), message: z.string(), request_id: z.string().nullable() }),
+};
 
 /** `?session=` on /interviews. Checked before any request is made. */
 export const sessionParamSchema = z.uuid();

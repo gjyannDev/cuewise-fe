@@ -1,11 +1,16 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ApiResponseError, NoResponseError } from "@/lib/config/api.helper";
 import { API } from "@/lib/config/axios.client";
-import { ANSWER_TIMEOUT_MS, START_TIMEOUT_MS } from "@/modules/interviews/constants";
+import { redirectIfSessionEnded } from "@/lib/config/session-redirect";
+import { START_TIMEOUT_MS } from "@/modules/interviews/constants";
 import { interviewsService } from "@/modules/interviews/services/interviews.services";
-import { ok } from "@tests/helpers/axios";
+import { AnswerStreamError } from "@/modules/interviews/utils/answer-stream-error";
+import { errorBody, ok } from "@tests/helpers/axios";
+import { sseFrame, streamOf } from "@tests/helpers/sse";
 
 vi.mock("@/lib/config/axios.client", () => ({ API: { get: vi.fn(), post: vi.fn() } }));
+vi.mock("@/lib/config/session-redirect", () => ({ redirectIfSessionEnded: vi.fn() }));
 
 const post = vi.mocked(API.post);
 const get = vi.mocked(API.get);
@@ -59,64 +64,113 @@ describe("interviewsService", () => {
     await expect(interviewsService.get(ID)).rejects.toThrow();
   });
 
-  it("answer posts exactly question_id and answer to the session's messages and returns the parsed turn", async () => {
-    const turn = {
+  describe("answerStream", () => {
+    const fetchMock = vi.fn<typeof fetch>();
+    const redirect = vi.mocked(redirectIfSessionEnded);
+    const QUESTION = interview.current_question.id;
+    const nextQuestion = { ...interview.current_question, id: "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d", position: 2 };
+    const moveOn = {
       session: interview.session,
       reaction: { id: "019a2b3c-4d5e-7f60-8a9b-0c1d2e3f4a5b", text: "Thanks for sharing that." },
-      current_question: {
-        ...interview.current_question,
-        id: "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
-        position: 2,
-        main_number: 2,
-      },
+      current_question: { ...nextQuestion, main_number: 2 },
     };
-    post.mockResolvedValue(ok(turn, 201));
-    const body = { question_id: interview.current_question.id, answer: "We talked it through." };
+    const sse = (...chunks: string[]) =>
+      new Response(streamOf(...chunks), { status: 200, headers: { "content-type": "text/event-stream" } });
+    const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status });
 
-    await expect(interviewsService.answer(ID, body)).resolves.toEqual(turn);
-    expect(post).toHaveBeenCalledWith(`/interviews/${ID}/messages`, body, { timeout: ANSWER_TIMEOUT_MS });
-  });
+    async function drain(params = { question_id: QUESTION, answer: "We talked it through." }, signal?: AbortSignal) {
+      const events = [];
+      for await (const event of interviewsService.answerStream(ID, params, signal)) {
+        events.push(event);
+      }
+      return events;
+    }
 
-  it("answer resolves a follow-up turn (no reaction), so the screen never reports a send error for it", async () => {
-    const turn = {
-      session: interview.session,
-      reaction: null,
-      current_question: {
-        ...interview.current_question,
-        id: "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
-        position: 2,
-        question_kind: "follow_up",
-        main_number: 1,
-      },
-    };
-    post.mockResolvedValue(ok(turn, 201));
+    beforeEach(() => {
+      fetchMock.mockReset();
+      redirect.mockReset();
+      vi.stubGlobal("fetch", fetchMock);
+    });
+    afterEach(() => vi.unstubAllGlobals());
 
-    await expect(
-      interviewsService.answer(ID, { question_id: interview.current_question.id, answer: "I'd use Redis." }),
-    ).resolves.toEqual(turn);
-  });
+    it("posts exactly question_id and the trimmed answer to the stream route (extra keys stripped)", async () => {
+      fetchMock.mockResolvedValueOnce(sse(sseFrame("done", moveOn)));
 
-  it("answer sends a trimmed answer and no extra keys (cuewise-be rejects them)", async () => {
-    post.mockResolvedValue(
-      ok({ session: interview.session, reaction: { id: ID, text: "Got it, thanks." }, current_question: null }, 201),
-    );
-    const params = { question_id: interview.current_question.id, answer: "  Yes  ", note: "x" };
+      await drain({ question_id: QUESTION, answer: "  Yes  ", note: "x" } as never);
 
-    await interviewsService.answer(ID, params);
+      const [url, init] = fetchMock.mock.calls[0];
+      expect(url).toBe(`/api/interviews/${ID}/messages/stream`);
+      expect(init?.method).toBe("POST");
+      expect(new Headers(init?.headers).get("accept")).toBe("text/event-stream");
+      expect(JSON.parse(String(init?.body))).toEqual({ question_id: QUESTION, answer: "Yes" });
+    });
 
-    expect(post).toHaveBeenCalledWith(
-      `/interviews/${ID}/messages`,
-      { question_id: interview.current_question.id, answer: "Yes" },
-      { timeout: ANSWER_TIMEOUT_MS },
-    );
-  });
+    it("yields the events in order and stops after done (AC7)", async () => {
+      fetchMock.mockResolvedValueOnce(
+        sse(
+          sseFrame("status", { phase: "received" }),
+          sseFrame("reaction", moveOn.reaction) + sseFrame("question.delta", { text: "Tell " }),
+          sseFrame("done", moveOn),
+          sseFrame("status", { phase: "writing" }),
+        ),
+      );
 
-  it("answer rejects a turn without a reaction", async () => {
-    post.mockResolvedValue(ok({ session: interview.session, current_question: null }, 201));
+      expect((await drain()).map((e) => e.event)).toEqual(["status", "reaction", "question.delta", "done"]);
+    });
 
-    await expect(
-      interviewsService.answer(ID, { question_id: interview.current_question.id, answer: "Yes" }),
-    ).rejects.toThrow();
+    it("yields a follow-up done with reaction null", async () => {
+      const followUp = { ...moveOn, reaction: null, current_question: { ...nextQuestion, question_kind: "follow_up" } };
+      fetchMock.mockResolvedValueOnce(sse(sseFrame("done", followUp)));
+
+      expect(await drain()).toEqual([{ event: "done", data: followUp }]);
+    });
+
+    it("skips an unknown event (EC9)", async () => {
+      fetchMock.mockResolvedValueOnce(sse(sseFrame("progress", { pct: 1 }), sseFrame("done", moveOn)));
+
+      expect((await drain()).map((e) => e.event)).toEqual(["done"]);
+    });
+
+    it("throws interrupted for a done without a reaction key (EC10)", async () => {
+      const broken: Record<string, unknown> = { ...moveOn };
+      delete broken.reaction;
+      fetchMock.mockResolvedValueOnce(sse(sseFrame("done", broken)));
+
+      await expect(drain()).rejects.toEqual(new AnswerStreamError("interrupted"));
+    });
+
+    it.each([
+      [409, "QUESTION_NOT_CURRENT"],
+      [422, "VALIDATION_ERROR"],
+    ])("throws ApiResponseError for a %i before the stream (EC2, EC3)", async (status, code) => {
+      fetchMock.mockResolvedValueOnce(json(status, errorBody(code, "Nope")));
+
+      const error = await drain().catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(ApiResponseError);
+      expect(error).toMatchObject({ status, body: errorBody(code, "Nope") });
+    });
+
+    it("hands a 401 to the shared session redirect before throwing (EC1)", async () => {
+      fetchMock.mockResolvedValueOnce(json(401, errorBody("TOKEN_EXPIRED", "Expired")));
+
+      await expect(drain()).rejects.toBeInstanceOf(ApiResponseError);
+      expect(redirect).toHaveBeenCalledWith(401, errorBody("TOKEN_EXPIRED", "Expired"));
+    });
+
+    it("throws NoResponseError when fetch fails (EC4)", async () => {
+      fetchMock.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+
+      await expect(drain()).rejects.toBeInstanceOf(NoResponseError);
+    });
+
+    it("rethrows an abort as is (EC17)", async () => {
+      const controller = new AbortController();
+      controller.abort();
+      fetchMock.mockRejectedValueOnce(new DOMException("aborted", "AbortError"));
+
+      await expect(drain(undefined, controller.signal)).rejects.toMatchObject({ name: "AbortError" });
+    });
   });
 
   it("messages requests the session's transcript and returns the parsed items", async () => {

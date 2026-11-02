@@ -16,6 +16,8 @@ type ChatThreadProps = {
   total: number;
   /** Set while the interviewer is replying. */
   thinkingLabel?: string;
+  /** Lines of the turn in progress are on screen but not saved yet: the log holds its announcements until they are. */
+  isStreaming?: boolean;
   /** After "jump to latest": the screen moves focus to the composer. */
   onJump: () => void;
 };
@@ -24,7 +26,7 @@ type ChatThreadProps = {
  * The scrolling conversation (AI Elements Conversation on use-stick-to-bottom): it stays pinned to the latest
  * message while the user is at the bottom and leaves them alone when they scroll up to reread.
  */
-export function ChatThread({ items, total, thinkingLabel, onJump }: ChatThreadProps) {
+export function ChatThread({ items, total, thinkingLabel, isStreaming = false, onJump }: ChatThreadProps) {
   const reduceMotion = useReducedMotion();
   const stickToBottom = useRef<StickToBottomContext>(null);
   // Sending always brings the new answer into view, even if the user had scrolled up.
@@ -45,7 +47,14 @@ export function ChatThread({ items, total, thinkingLabel, onJump }: ChatThreadPr
       className="min-h-0"
     >
       <ConversationContent className="gap-4 px-0 pt-4 pb-8 sm:px-2">
-        <div role="log" aria-live="polite" aria-label="Interview conversation" className="flex flex-col gap-4">
+        {/* aria-busy while a question streams: screen readers read the finished line once, not word by word. */}
+        <div
+          role="log"
+          aria-live="polite"
+          aria-busy={isStreaming}
+          aria-label="Interview conversation"
+          className="flex flex-col gap-4"
+        >
           {items.map((item) => (
             <ChatMessage
               key={item.key}

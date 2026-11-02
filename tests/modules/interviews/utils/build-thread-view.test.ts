@@ -1,25 +1,26 @@
 import { describe, expect, it } from "vitest";
 
 import { buildThreadView } from "@/modules/interviews/utils/build-thread-view";
-import { Q1, Q2, transcriptItem } from "@tests/helpers/interviews";
+import { Q1, Q2, REACTION, transcriptItem } from "@tests/helpers/interviews";
 
-const answered = [transcriptItem("question", Q1, 1), transcriptItem("answer", Q1, 1), transcriptItem("reaction", Q1, 1)];
+const question1 = transcriptItem("question", Q1, 1);
+const answered = [question1, transcriptItem("answer", Q1, 1), transcriptItem("reaction", Q1, 1)];
+const keys = (items: { key: string }[]) => items.map(({ key }) => key);
 
 describe("buildThreadView", () => {
-  it("keys every item by question and kind, so a refetch that changes ids never remounts a bubble", () => {
-    const { items } = buildThreadView(answered, {});
+  it("keys every item by position and kind, so a refetch that changes ids never remounts a bubble", () => {
+    const refetched = answered.map((item) => ({ ...item, id: `${item.id.slice(0, -4)}ffff` }));
 
-    expect(items.map(({ key }) => key)).toEqual([`${Q1}:question`, `${Q1}:answer`, `${Q1}:reaction`]);
+    expect(keys(buildThreadView(answered, {}).items)).toEqual(["1:question", "1:answer", "1:reaction"]);
+    expect(keys(buildThreadView(refetched, {}).items)).toEqual(["1:question", "1:answer", "1:reaction"]);
   });
 
   it("appends the pending answer last, as a candidate bubble keyed like the stored answer that will replace it", () => {
-    const { items } = buildThreadView([transcriptItem("question", Q1, 1)], {
-      pendingAnswer: { questionId: Q1, text: "We talked it through." },
-    });
+    const { items } = buildThreadView([question1], { pendingAnswer: { questionId: Q1, text: "We talked it through." } });
 
     expect(items.at(-1)).toEqual(
       expect.objectContaining({
-        key: `${Q1}:answer`,
+        key: "1:answer",
         question_id: Q1,
         position: 1,
         role: "candidate",
@@ -37,23 +38,10 @@ describe("buildThreadView", () => {
     expect(items.some(({ pending }) => pending)).toBe(false);
   });
 
-  it("hides the next question during the reveal pause, and progress stays on the answered one", () => {
-    const view = buildThreadView([...answered, transcriptItem("question", Q2, 2)], { hiddenQuestionId: Q2 });
-
-    expect(view.items.map(({ key }) => key)).not.toContain(`${Q2}:question`);
-    expect(view.mainNumber).toBe(1);
-  });
-
-  it("holds back a reaction that arrived while the thinking indicator is still up (a fast reply)", () => {
-    const { items } = buildThreadView(answered, { hiddenReactionQuestionId: Q1 });
-
-    expect(items.map(({ key }) => key)).toEqual([`${Q1}:question`, `${Q1}:answer`]);
-  });
-
-  it("reports the unanswered last question as open, even while it is hidden (the composer answers it next)", () => {
+  it("reports the unanswered last question as open", () => {
     const next = transcriptItem("question", Q2, 2);
 
-    expect(buildThreadView([...answered, next], { hiddenQuestionId: Q2 }).openQuestion).toEqual(next);
+    expect(buildThreadView([...answered, next], {}).openQuestion).toEqual(next);
   });
 
   it("has no open question once every question is answered", () => {
@@ -65,8 +53,70 @@ describe("buildThreadView", () => {
 
     const view = buildThreadView(transcript, {});
 
-    expect(view.items).toEqual(transcript.map((item) => ({ ...item, key: `${item.question_id}:${item.kind}` })));
+    expect(view.items).toEqual(transcript.map((item) => ({ ...item, key: `${item.position}:${item.kind}` })));
     expect(view.mainNumber).toBe(2);
+  });
+
+  describe("while a turn streams", () => {
+    const pendingAnswer = { questionId: Q1, text: "We talked it through." };
+
+    it("adds the reaction, then the question as it is written, after the pending answer", () => {
+      const view = buildThreadView([question1], {
+        pendingAnswer,
+        streaming: { answered: question1, reaction: REACTION, questionText: "Tell me about " },
+      });
+
+      expect(keys(view.items)).toEqual(["1:question", "1:answer", "1:reaction", "2:question"]);
+      expect(view.items[2]).toMatchObject({ kind: "reaction", text: REACTION.text, streaming: true });
+      expect(view.items[3]).toMatchObject({
+        kind: "question",
+        role: "interviewer",
+        text: "Tell me about ",
+        question_kind: "main",
+        main_number: 2,
+        streaming: true,
+      });
+    });
+
+    it("captions a question streamed without a reaction as a follow-up (EC12)", () => {
+      const view = buildThreadView([question1], { pendingAnswer, streaming: { answered: question1, questionText: "Why?" } });
+
+      expect(view.items.at(-1)).toMatchObject({ key: "2:question", question_kind: "follow_up", main_number: 1 });
+    });
+
+    it("adds only the reaction while nothing is written, e.g. a completing answer (EC14)", () => {
+      const view = buildThreadView([question1], {
+        pendingAnswer,
+        streaming: { answered: question1, reaction: REACTION, questionText: "" },
+      });
+
+      expect(keys(view.items)).toEqual(["1:question", "1:answer", "1:reaction"]);
+    });
+
+    it("keeps transient lines out of progress and the open question", () => {
+      const view = buildThreadView([question1], {
+        pendingAnswer,
+        streaming: { answered: question1, reaction: REACTION, questionText: "Tell me" },
+      });
+
+      expect(view.mainNumber).toBe(1);
+      expect(view.openQuestion).toEqual(question1);
+    });
+
+    it("shows the saved turn under the same keys, with no transient duplicates, once it is in the transcript (AC12, EC22)", () => {
+      const saved = [...answered, transcriptItem("question", Q2, 2)].map((item) =>
+        item.kind === "reaction" ? { ...item, text: "Saved wording." } : item,
+      );
+
+      const view = buildThreadView(saved, {
+        pendingAnswer,
+        streaming: { answered: question1, reaction: REACTION, questionText: "Tell me" },
+      });
+
+      expect(keys(view.items)).toEqual(["1:question", "1:answer", "1:reaction", "2:question"]);
+      expect(view.items.some(({ streaming }) => streaming)).toBe(false);
+      expect(view.items[2].text).toBe("Saved wording.");
+    });
   });
 
   describe("with follow-ups", () => {
@@ -90,21 +140,10 @@ describe("buildThreadView", () => {
       expect(buildThreadView(transcript, {}).mainNumber).toBe(5);
     });
 
-    it("keeps progress on the current main question while a follow-up is held back for the reveal", () => {
-      const view = buildThreadView([...mainAnswered, followUp(Q2, 2, 1)], { hiddenQuestionId: Q2 });
-
-      expect(view.mainNumber).toBe(1);
-      expect(view.openQuestion).toEqual(followUp(Q2, 2, 1));
-    });
-
     it("shows a main question answered without a reaction as is (nothing in place of the reaction)", () => {
       const transcript = [...mainAnswered, followUp(Q2, 2, 1)];
 
-      expect(buildThreadView(transcript, {}).items.map(({ key }) => key)).toEqual([
-        `${Q1}:question`,
-        `${Q1}:answer`,
-        `${Q2}:question`,
-      ]);
+      expect(keys(buildThreadView(transcript, {}).items)).toEqual(["1:question", "1:answer", "2:question"]);
     });
 
     it("gives a pending answer to a follow-up that follow-up's kind and main number", () => {

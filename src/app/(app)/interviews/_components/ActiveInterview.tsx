@@ -68,7 +68,7 @@ export function ActiveInterview({
   } else if (isEnded || step.kind === "ended") {
     // Wins over a reply that lands after End interview.
     footer = <InterviewClosingCard variant="ended" autoFocus={isEnded} onStartNew={onStartNew} />;
-  } else if (step.kind === "completed" && !chat.isRevealing) {
+  } else if (step.kind === "completed") {
     footer = <InterviewClosingCard variant="completed" autoFocus={chat.hasSent} onStartNew={onStartNew} />;
   } else if (!openQuestion && !chat.isBusy) {
     // In progress, but the cached conversation has nothing left to answer: stale, so offer a refetch.
@@ -93,6 +93,7 @@ export function ActiveInterview({
       items={chat.view.items}
       mainNumber={chat.view.mainNumber}
       thinkingLabel={chat.thinkingLabel}
+      isStreaming={chat.isStreaming}
       footer={footer}
       onEnd={canEnd ? onEnd : undefined}
       onJump={() => composer.current?.focus()}

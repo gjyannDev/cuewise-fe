@@ -41,6 +41,7 @@ export function ChatMessage({ item, total, ref }: ChatMessageProps) {
   return (
     <div
       ref={ref}
+      aria-busy={item.streaming || undefined}
       className={cn("flex items-start gap-3", startsGroup && "mt-6 first:mt-0")}
     >
       <InterviewerAvatar />

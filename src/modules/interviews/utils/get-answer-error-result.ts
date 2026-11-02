@@ -1,6 +1,7 @@
 import { isNoResponseError, parseApiError } from "@/lib/config/api.helper";
 
 import { RESYNC_ERROR_CODES } from "../constants";
+import { AnswerStreamError } from "./answer-stream-error";
 import type { AnswerErrorResult } from "../types/interviews.types";
 
 const resyncCodes = new Set<string>(RESYNC_ERROR_CODES);
@@ -11,6 +12,13 @@ const resyncCodes = new Set<string>(RESYNC_ERROR_CODES);
  * No response at all is "unknown": cuewise-be saves the turn after the LLM call, so it may have succeeded.
  */
 export function getAnswerErrorResult(error: unknown): AnswerErrorResult {
+  // After the stream opened: an `error` event (nothing saved) or a stream that broke off (maybe saved).
+  if (error instanceof AnswerStreamError) {
+    if (error.kind === "interrupted") {
+      return { kind: "unknown" };
+    }
+    return error.code !== undefined && resyncCodes.has(error.code) ? { kind: "resync" } : { kind: "toast" };
+  }
   if (isNoResponseError(error)) {
     return { kind: "unknown" };
   }

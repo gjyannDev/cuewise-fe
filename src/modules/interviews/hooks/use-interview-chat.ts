@@ -1,75 +1,61 @@
-import { useState } from "react";
+import { useReducer, useState } from "react";
 
 import { useMutationCallbacks } from "@/hooks/use-mutation-callback";
 
-import {
-  INTERVIEWER_SLOW_LABEL,
-  MIN_THINKING_MS,
-  RESYNC_MESSAGE,
-  REVEAL_DELAY_MS,
-  THINKING_SLOW_AFTER_MS,
-  UNCONFIRMED_SEND_MESSAGE,
-} from "../constants";
+import { INTERVIEWER_SLOW_LABEL, RESYNC_MESSAGE, THINKING_SLOW_AFTER_MS, UNCONFIRMED_SEND_MESSAGE } from "../constants";
 import { useAnswerInterviewMutation } from "../queries/interviews.queries";
-import type { TranscriptItem } from "../types/interviews.types";
+import type { AnswerStreamEvent, TranscriptItem } from "../types/interviews.types";
 import { buildThreadView } from "../utils/build-thread-view";
 import { getAnswerErrorResult } from "../utils/get-answer-error-result";
 import { pickThinkingLabel } from "../utils/pick-thinking-label";
+import { ANSWER_STREAM_START, type AnswerStreamState, reduceAnswerStream } from "../utils/reduce-answer-stream";
 
 /** A failed send: the composer puts the text back, with `message` under the field when the backend rejected it. */
 export type SendFailure = { message?: string };
 
-const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+/** A new send starts the live turn over; every other action is a stream event. */
+type TurnAction = AnswerStreamEvent | { event: "start" };
+const reduceTurn = (state: AnswerStreamState, action: TurnAction) =>
+  action.event === "start" ? ANSWER_STREAM_START : reduceAnswerStream(state, action);
 
 /**
- * Sending answers in the chat: the optimistic bubble, the thinking indicator and the short reveal of the next
- * question. Timers start in `submit` (one user action), not in effects; state set after unmount is a no-op, and the
- * container is keyed per session.
+ * Sending answers in the chat: the optimistic answer bubble, the thinking indicator, and the turn as it streams in
+ * (the reaction, then the question typing in) until the saved turn replaces it. Nothing is delayed on purpose: what
+ * the candidate sees follows the backend's events. The slow-label timer starts in `submit` (one user action), not in
+ * an effect; the container is keyed per session.
  */
 export function useInterviewChat(sessionId: string, transcript: TranscriptItem[], questionCount: number) {
-  const answer = useAnswerInterviewMutation(sessionId);
+  const [turn, dispatch] = useReducer(reduceTurn, ANSWER_STREAM_START);
+  const answer = useAnswerInterviewMutation(sessionId, { onEvent: dispatch });
   const [label, setLabel] = useState<string>();
   const [isSlow, setIsSlow] = useState(false);
-  /** The question whose reply is awaited (the indicator is up until its minimum time has passed). */
-  const [thinkingFor, setThinkingFor] = useState<string>();
-  const [hiddenQuestionId, setHiddenQuestionId] = useState<string>();
-  const [isRevealing, setIsRevealing] = useState(false);
+  /** The question being answered while its turn runs. */
+  const [answering, setAnswering] = useState<TranscriptItem>();
 
   const { buildCallbacks } = useMutationCallbacks({ entityName: "Answer" });
   const resyncCallbacks = buildCallbacks("send", "answer", { errorMessage: RESYNC_MESSAGE });
   const failureCallbacks = buildCallbacks("send", "answer", { errorMessage: "Couldn't send your answer" });
   const unconfirmedCallbacks = buildCallbacks("send", "answer", { errorMessage: UNCONFIRMED_SEND_MESSAGE });
 
+  const isSending = answer.isPending;
   // TanStack's optimistic-UI-via-variables: the bubble exists only while the request runs, so a failure needs no rollback.
   const pendingAnswer =
-    answer.isPending && answer.variables
-      ? { questionId: answer.variables.question_id, text: answer.variables.answer }
-      : undefined;
-  const view = buildThreadView(transcript, { pendingAnswer, hiddenQuestionId, hiddenReactionQuestionId: thinkingFor });
+    isSending && answer.variables ? { questionId: answer.variables.question_id, text: answer.variables.answer } : undefined;
+  const streaming =
+    isSending && answering ? { answered: answering, reaction: turn.reaction, questionText: turn.questionText } : undefined;
+  const view = buildThreadView(transcript, { pendingAnswer, streaming });
 
   async function submit(question: TranscriptItem, text: string): Promise<SendFailure | void> {
     setLabel(pickThinkingLabel(label, question, questionCount));
     setIsSlow(false);
-    setThinkingFor(question.question_id);
+    setAnswering(question);
+    dispatch({ event: "start" });
     const slowTimer = setTimeout(() => setIsSlow(true), THINKING_SLOW_AFTER_MS);
-    const minimumThinking = delay(MIN_THINKING_MS);
 
     try {
-      const outcome = await answer.mutateAsync({ question_id: question.question_id, answer: text });
-      if (outcome.kind === "recovered") {
-        // A lost reply that was saved after all: the refetched thread already shows the turn, so no pause and no toast.
-        setThinkingFor(undefined);
-        return;
-      }
-      setHiddenQuestionId(outcome.response.current_question?.id);
-      setIsRevealing(true);
-      await minimumThinking;
-      setThinkingFor(undefined);
-      await delay(REVEAL_DELAY_MS);
-      setHiddenQuestionId(undefined);
-      setIsRevealing(false);
+      // `cancelled` (the screen went away) and `recovered` (a lost reply that was saved) need nothing more here.
+      await answer.mutateAsync({ question_id: question.question_id, answer: text });
     } catch (error) {
-      setThinkingFor(undefined);
       const result = getAnswerErrorResult(error);
       if (result.kind === "field") {
         return { message: result.message };
@@ -80,18 +66,21 @@ export function useInterviewChat(sessionId: string, transcript: TranscriptItem[]
       return {};
     } finally {
       clearTimeout(slowTimer);
+      setAnswering(undefined);
     }
   }
 
-  const isThinking = thinkingFor !== undefined;
+  // Thinking until the question starts to appear (or the turn ends, when no text streams).
+  const isThinking = isSending && turn.questionText === "";
   return {
     view,
     thinkingLabel: isThinking ? (isSlow ? INTERVIEWER_SLOW_LABEL : label) : undefined,
-    /** No new send while the reply is awaited or the next question is being revealed. */
-    isBusy: isThinking || isRevealing,
-    isRevealing,
+    /** No new send while a turn runs. */
+    isBusy: isSending,
+    /** A turn is streaming lines that aren't saved yet: screen readers wait for the finished ones. */
+    isStreaming: isSending && view.items.some((item) => item.streaming),
     /** The answer request is in flight (leaving now would drop it). */
-    isSending: answer.isPending,
+    isSending,
     /** Something was sent on this screen: new content may take focus (never on page load). */
     hasSent: label !== undefined,
     submit,

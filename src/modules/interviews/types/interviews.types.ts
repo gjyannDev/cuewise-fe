@@ -2,6 +2,7 @@ import type { z } from "zod";
 
 import type {
   answerFormSchema,
+  answerStreamEventSchemas,
   answerRequestSchema,
   answerResponseSchema,
   interviewSchema,
@@ -48,8 +49,14 @@ export type AnswerErrorResult =
   | { kind: "toast" }
   | { kind: "unknown" };
 
-/** How a send ended: the backend's reply, or `recovered` when a lost reply turned out to have been saved. */
-export type AnswerOutcome = { kind: "answered"; response: AnswerResponse } | { kind: "recovered" };
+/**
+ * How a send ended: the backend's reply, `recovered` when a lost reply turned out to have been saved, or `cancelled`
+ * when the screen went away mid-turn (nothing is written then).
+ */
+export type AnswerOutcome =
+  | { kind: "answered"; response: AnswerResponse }
+  | { kind: "recovered" }
+  | { kind: "cancelled" };
 
 /** Which screen a loaded interview needs: the current question, the completed card, or the ended card (abandoned). */
 export type InterviewStep =
@@ -57,14 +64,23 @@ export type InterviewStep =
   | { kind: "completed" }
   | { kind: "ended" };
 
+type StreamSchemas = typeof answerStreamEventSchemas;
+export type AnswerStreamEventName = keyof StreamSchemas;
+/** One parsed event of a streamed answer turn. */
+export type AnswerStreamEvent = {
+  [Name in AnswerStreamEventName]: { event: Name; data: z.infer<StreamSchemas[Name]> };
+}[AnswerStreamEventName];
+
 export type TranscriptItem = z.infer<typeof transcriptItemSchema>;
 export type Transcript = z.infer<typeof transcriptSchema>;
 
 /**
- * A transcript line as the thread renders it. `key` is `question_id:kind`, stable across refetches (the client id
- * of a just-sent answer is later replaced by the stored one) so bubbles never remount and the log never re-announces.
+ * A transcript line as the thread renders it. `key` is `position:kind`, stable across refetches (ids of a just-sent
+ * answer are later replaced by the stored ones) and known for a question still being streamed, so bubbles never
+ * remount and the log never re-announces. `pending`: the answer being sent. `streaming`: a reaction or question of
+ * the turn in progress, shown before it is saved.
  */
-export type ThreadItem = TranscriptItem & { key: string; pending?: boolean };
+export type ThreadItem = TranscriptItem & { key: string; pending?: boolean; streaming?: boolean };
 
 /** What the thread shows, plus what the screen derives from it. */
 export type ThreadView = {

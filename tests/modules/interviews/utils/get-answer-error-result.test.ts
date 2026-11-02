@@ -1,8 +1,34 @@
 import { AxiosError } from "axios";
 import { describe, expect, it } from "vitest";
 
+import { ApiResponseError, NoResponseError } from "@/lib/config/api.helper";
+import { AnswerStreamError } from "@/modules/interviews/utils/answer-stream-error";
 import { getAnswerErrorResult } from "@/modules/interviews/utils/get-answer-error-result";
 import { axiosErrorWith, errorBody, networkError } from "@tests/helpers/axios";
+
+describe("getAnswerErrorResult for the answer stream", () => {
+  it.each([
+    ["QUESTION_NOT_CURRENT", "resync"],
+    ["SESSION_NOT_IN_PROGRESS", "resync"],
+    ["INTERNAL_ERROR", "toast"],
+  ])("maps an error event %s to %s (EC5)", (code, kind) => {
+    expect(getAnswerErrorResult(new AnswerStreamError("event", code))).toEqual({ kind });
+  });
+
+  it("treats an interrupted stream as an unknown outcome (EC6, EC10, EC20)", () => {
+    expect(getAnswerErrorResult(new AnswerStreamError("interrupted"))).toEqual({ kind: "unknown" });
+  });
+
+  it("maps fetch failures before the stream like axios ones (EC2-EC4)", () => {
+    expect(getAnswerErrorResult(new ApiResponseError(404, errorBody("NOT_FOUND", "Gone")))).toEqual({ kind: "resync" });
+    expect(getAnswerErrorResult(new ApiResponseError(409, errorBody("QUESTION_NOT_CURRENT", "x")))).toEqual({
+      kind: "resync",
+    });
+    const tooLong = errorBody("VALIDATION_ERROR", "Invalid", [{ field: "body.answer", issue: "Too long" }]);
+    expect(getAnswerErrorResult(new ApiResponseError(422, tooLong))).toEqual({ kind: "field", message: "Too long" });
+    expect(getAnswerErrorResult(new NoResponseError())).toEqual({ kind: "unknown" });
+  });
+});
 
 describe("getAnswerErrorResult", () => {
   // Codes verified against cuewise-be app/core/errors.py.

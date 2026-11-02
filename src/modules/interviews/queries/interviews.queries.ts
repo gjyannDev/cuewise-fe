@@ -1,13 +1,17 @@
 import { skipToken, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 
+import { ANSWER_TIMEOUT_MS } from "../constants";
 import { interviewsService } from "../services/interviews.services";
 import type {
   AnswerOutcome,
   AnswerRequest,
+  AnswerStreamEvent,
   Interview,
   StartInterviewRequest,
   Transcript,
 } from "../types/interviews.types";
+import { AnswerStreamError } from "../utils/answer-stream-error";
 import { appendAnswerTurn } from "../utils/append-answer-turn";
 import { getAnswerErrorResult } from "../utils/get-answer-error-result";
 import { interviewKeys } from "./interviews.keys";
@@ -39,15 +43,32 @@ export function useInterviewMessagesQuery(id: string | undefined) {
   });
 }
 
-export function useAnswerInterviewMutation(id: string) {
+type AnswerStreamOptions = {
+  /** Every event of the turn as it arrives (the screen shows them before the turn is saved). */
+  onEvent: (event: AnswerStreamEvent) => void;
+};
+
+/**
+ * Sends an answer as a streamed turn. Events go to `onEvent` as they arrive; the cache changes once, at `done`, with
+ * the same update a full reply used to make. Leaving the screen cancels the request (cuewise-be then stops its LLM
+ * call) and nothing is written; the browser's own time budget runs out like a dropped connection.
+ */
+export function useAnswerInterviewMutation(id: string, { onEvent }: AnswerStreamOptions) {
   const queryClient = useQueryClient();
   // detail(id) is a prefix of messages(id), so this covers the interview and its conversation.
   const cancelFetches = () => queryClient.cancelQueries({ queryKey: interviewKeys.detail(id) });
+  const leave = useRef<AbortController | null>(null);
+  const onEventRef = useRef(onEvent);
+  useEffect(() => {
+    onEventRef.current = onEvent;
+  });
+  // Unmounting is a subscription ending: abort the turn in flight.
+  useEffect(() => () => leave.current?.abort(), []);
 
   /**
-   * No reply came back, but cuewise-be saves the turn after the LLM call, so it may have succeeded. If the interview
-   * has moved past the question, it did: reload the conversation and report `recovered`. Otherwise rethrow; the
-   * screen says the send couldn't be confirmed, and a resend either succeeds or gets a 409 that resyncs.
+   * No reply came back, but cuewise-be saves the turn at its end, so it may have succeeded. If the interview has
+   * moved past the question, it did: reload the conversation and report `recovered`. Otherwise rethrow; the screen
+   * says the send couldn't be confirmed, and a resend either succeeds or gets a 409 that resyncs.
    */
   async function recover(error: unknown, { question_id }: AnswerRequest): Promise<AnswerOutcome> {
     const interview = await queryClient.fetchQuery({
@@ -63,21 +84,54 @@ export function useAnswerInterviewMutation(id: string) {
     return { kind: "recovered" };
   }
 
+  async function streamTurn(params: AnswerRequest, signal: AbortSignal): Promise<AnswerOutcome> {
+    try {
+      for await (const event of interviewsService.answerStream(id, params, signal)) {
+        onEventRef.current(event);
+        if (event.event === "done") {
+          return { kind: "answered", response: event.data };
+        }
+        if (event.event === "error") {
+          throw new AnswerStreamError("event", event.data.code);
+        }
+      }
+    } catch (error) {
+      // Our own abort (unmount) or the time budget: both end up here as an AbortError / TimeoutError.
+      if (signal.aborted && !(error instanceof AnswerStreamError)) {
+        throw new AnswerStreamError("interrupted");
+      }
+      throw error;
+    }
+    throw new AnswerStreamError("interrupted");
+  }
+
   return useMutation({
     mutationKey: interviewKeys.answer(id),
     mutationFn: async (params: AnswerRequest): Promise<AnswerOutcome> => {
+      const controller = new AbortController();
+      leave.current = controller;
+      const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(ANSWER_TIMEOUT_MS)]);
       try {
-        return { kind: "answered", response: await interviewsService.answer(id, params) };
+        const outcome = await streamTurn(params, signal);
+        // A `done` that raced the unmount: the screen is gone, so nothing is written.
+        return controller.signal.aborted ? { kind: "cancelled" } : outcome;
       } catch (error) {
+        if (controller.signal.aborted) {
+          return { kind: "cancelled" };
+        }
         if (getAnswerErrorResult(error).kind !== "unknown") {
           throw error;
         }
         return recover(error, params);
+      } finally {
+        if (leave.current === controller) {
+          leave.current = null;
+        }
       }
     },
     // A refetch already in flight (e.g. on window focus) would land after the write below and erase the new turn.
     onMutate: cancelFetches,
-    // The backend has moved on, so the cache does too, without a GET; the screen holds the next question back briefly.
+    // The backend has moved on, so the cache does too, without a GET.
     onSuccess: async (outcome, request) => {
       if (outcome.kind !== "answered") {
         return;

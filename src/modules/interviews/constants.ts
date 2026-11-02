@@ -11,6 +11,8 @@ export const SESSION_STATUSES = ["in_progress", "abandoned", "completed"] as con
 /** Who said a transcript line, and what it is (GET /interviews/{id}/messages). */
 export const TRANSCRIPT_ROLES = ["interviewer", "candidate"] as const;
 export const TRANSCRIPT_KINDS = ["question", "answer", "reaction"] as const;
+/** What a streamed answer turn is doing (cuewise-be `TurnPhase`). */
+export const TURN_PHASES = ["received", "deciding", "writing"] as const;
 
 export const MIN_QUESTION_COUNT = 1;
 export const MAX_QUESTION_COUNT = 10;
@@ -38,10 +40,6 @@ export const INTERVIEWER_SLOW_LABEL = "Still thinking…";
 export const INTERVIEWER_WRAP_UP_LABEL = "Wrapping up…";
 
 export const THINKING_SLOW_AFTER_MS = 5000;
-/** Keeps the indicator up long enough not to flash when the reply is fast. */
-export const MIN_THINKING_MS = 500;
-/** A beat between the reaction and the next question (or the completed card). */
-export const REVEAL_DELAY_MS = 600;
 
 /** The caption above a follow-up, where a main question shows "Question N of M". */
 export const FOLLOW_UP_CAPTION = "Follow-up";
@@ -50,8 +48,8 @@ export const THREAD_ERROR_MESSAGE = "Couldn't load the conversation.";
 export const STALE_THREAD_MESSAGE = "Couldn't load the latest question.";
 
 /**
- * Longer than the default 15s: cuewise-be may spend up to 30s (llm_total_budget_seconds) writing the next question,
- * and the turn is only saved after that. Keep in step with the /api forwarder's budget for the same route.
+ * The whole streamed answer turn, browser side and in the /api forwarder: cuewise-be may spend up to 30s
+ * (llm_total_budget_seconds) on it, and the turn is only saved at its end.
  */
 export const ANSWER_TIMEOUT_MS = 45_000;
 /** Starting adds a job-description summary (capped at 10s) before the first question's 30s LLM budget. */
