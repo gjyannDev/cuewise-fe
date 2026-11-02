@@ -23,18 +23,52 @@ export function isSessionErrorCode(code: string | undefined) {
 }
 
 /**
+ * A non-2xx response to a `fetch` call (calls axios can't make, e.g. reading a stream). `body` is the parsed JSON,
+ * or null when it wasn't JSON. Read by `parseApiError` / `isNoResponseError` like an AxiosError's response.
+ */
+export class ApiResponseError extends Error {
+  constructor(
+    readonly status: number,
+    readonly body: unknown,
+  ) {
+    super(`Request failed with status ${status}`);
+    this.name = "ApiResponseError";
+  }
+}
+
+/** A `fetch` call that got no response at all: the backend may still have done the work. */
+export class NoResponseError extends Error {
+  constructor(options?: { cause?: unknown }) {
+    super("No response", options);
+    this.name = "NoResponseError";
+  }
+}
+
+/** Status and body of a failed request, from axios or from `ApiResponseError`. */
+function responseOf(error: unknown): { status: number; data: unknown } | undefined {
+  if (error instanceof ApiResponseError) {
+    return { status: error.status, data: error.body };
+  }
+  if (axios.isAxiosError(error) && error.response) {
+    return { status: error.response.status, data: error.response.data };
+  }
+  return undefined;
+}
+
+/**
  * The request got no answer from cuewise-be (browser timeout, network drop, or the /api forwarder's 503 when it
  * couldn't reach the backend). Unlike a real error response, the backend may still have done the work.
  */
 export function isNoResponseError(error: unknown) {
-  if (!axios.isAxiosError(error)) {
-    return false;
-  }
-  if (!error.response) {
+  if (error instanceof NoResponseError || (axios.isAxiosError(error) && !error.response)) {
     return true;
   }
-  const body = apiErrorBodySchema.safeParse(error.response.data);
-  return error.response.status === 503 && body.success && body.data.error.code === "SERVICE_UNAVAILABLE";
+  const response = responseOf(error);
+  if (!response) {
+    return false;
+  }
+  const body = apiErrorBodySchema.safeParse(response.data);
+  return response.status === 503 && body.success && body.data.error.code === "SERVICE_UNAVAILABLE";
 }
 
 export type ApiError = {
@@ -66,10 +100,9 @@ function toFieldErrors(code: string, message: string, details: unknown): Record<
 
 /** Turn any thrown value into the backend's code, message and per-field errors. Never exposes raw errors. */
 export function parseApiError(error: unknown): ApiError {
-  const status = axios.isAxiosError(error) ? error.response?.status : undefined;
-  const parsed = apiErrorBodySchema.safeParse(
-    axios.isAxiosError(error) ? error.response?.data : undefined,
-  );
+  const response = responseOf(error);
+  const status = response?.status;
+  const parsed = apiErrorBodySchema.safeParse(response?.data);
 
   if (!parsed.success) {
     return { status, code: undefined, message: GENERIC_ERROR_MESSAGE, fieldErrors: {} };

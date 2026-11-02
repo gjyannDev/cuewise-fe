@@ -1,7 +1,37 @@
 import { AxiosError, AxiosHeaders } from "axios";
 import { describe, expect, it } from "vitest";
 
-import { isNoResponseError, parseApiError } from "@/lib/config/api.helper";
+import { ApiResponseError, isNoResponseError, NoResponseError, parseApiError } from "@/lib/config/api.helper";
+
+describe("fetch error types (answer stream)", () => {
+  const body = (code: string, message = "m", details: unknown = null) => ({
+    error: { code, message, details, request_id: "req-1" },
+  });
+
+  it("parseApiError reads status, code and message from an ApiResponseError", () => {
+    expect(parseApiError(new ApiResponseError(409, body("QUESTION_NOT_CURRENT", "Not current")))).toMatchObject({
+      status: 409,
+      code: "QUESTION_NOT_CURRENT",
+      message: "Not current",
+    });
+  });
+
+  it("parseApiError reads 422 field errors without the body. prefix", () => {
+    const error = new ApiResponseError(422, body("VALIDATION_ERROR", "Invalid", [{ field: "body.answer", issue: "Too long" }]));
+
+    expect(parseApiError(error).fieldErrors).toEqual({ answer: "Too long" });
+  });
+
+  it("parseApiError falls back to the generic message for a non-JSON body", () => {
+    expect(parseApiError(new ApiResponseError(502, null))).toMatchObject({ status: 502, code: undefined });
+  });
+
+  it("isNoResponseError is true for NoResponseError and the forwarder's 503, false for a real error", () => {
+    expect(isNoResponseError(new NoResponseError())).toBe(true);
+    expect(isNoResponseError(new ApiResponseError(503, body("SERVICE_UNAVAILABLE")))).toBe(true);
+    expect(isNoResponseError(new ApiResponseError(409, body("QUESTION_NOT_CURRENT")))).toBe(false);
+  });
+});
 
 function axiosErrorWith(status: number, data: unknown) {
   const config = { headers: new AxiosHeaders() };

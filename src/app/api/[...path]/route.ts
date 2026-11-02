@@ -21,8 +21,21 @@ const OWNED_BY_NEXT = new Set(["auth/login", "auth/register", "auth/logout"]);
  */
 const SLOW_POSTS: { path: RegExp; timeoutMs: number }[] = [
   { path: /^interviews\/[^/]+\/messages$/, timeoutMs: ANSWER_TIMEOUT_MS },
+  { path: /^interviews\/[^/]+\/messages\/stream$/, timeoutMs: ANSWER_TIMEOUT_MS },
   { path: /^interviews$/, timeoutMs: START_TIMEOUT_MS },
 ];
+
+/** POSTs answered as Server-Sent Events: the body is passed through as it arrives, never read to the end here. */
+const STREAMING_POSTS = [/^interviews\/[^/]+\/messages\/stream$/];
+
+/**
+ * Headers that keep every hop from holding events back: no caching, `no-transform` so compression (Next's gzip
+ * included) leaves the stream alone, and `X-Accel-Buffering: no` for nginx-style proxies.
+ */
+const STREAM_HEADERS = { "Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no" };
+
+const isStreaming = (method: string, path: string) =>
+  method === "POST" && STREAMING_POSTS.some((route) => route.test(path));
 
 function timeoutFor(method: string, path: string) {
   const slow = method === "POST" ? SLOW_POSTS.find((route) => route.path.test(path)) : undefined;
@@ -47,9 +60,10 @@ async function forward(request: Request, { params }: ForwardContext) {
 
   const url = new URL(`${getApiUrl()}/${path.map(encodeURIComponent).join("/")}`);
   url.search = new URL(request.url).search;
+  const streaming = isStreaming(request.method, path.join("/"));
 
   // Built from scratch: browser headers (including any Authorization) are never forwarded.
-  const headers = new Headers({ Accept: "application/json" });
+  const headers = new Headers({ Accept: streaming ? "text/event-stream" : "application/json" });
   const contentType = request.headers.get("content-type");
   if (contentType) {
     headers.set("Content-Type", contentType);
@@ -61,15 +75,23 @@ async function forward(request: Request, { params }: ForwardContext) {
 
   let upstream: Response;
   try {
+    const budget = AbortSignal.timeout(timeoutFor(request.method, path.join("/")));
     upstream = await fetch(url, {
       method: request.method,
       headers,
       body: request.method === "GET" || request.method === "HEAD" ? undefined : await request.text(),
       cache: "no-store",
-      signal: AbortSignal.timeout(timeoutFor(request.method, path.join("/"))),
+      // A stream also ends when the browser leaves, so cuewise-be sees the disconnect and stops its LLM call.
+      signal: streaming ? AbortSignal.any([budget, request.signal]) : budget,
     });
   } catch {
     return errorResponse(503, "SERVICE_UNAVAILABLE", GENERIC_ERROR_MESSAGE);
+  }
+
+  if (streaming && upstream.ok && upstream.body) {
+    const streamHeaders = new Headers(STREAM_HEADERS);
+    streamHeaders.set("Content-Type", upstream.headers.get("content-type") ?? "text/event-stream");
+    return new Response(upstream.body, { status: upstream.status, headers: streamHeaders });
   }
 
   const text = await upstream.text();

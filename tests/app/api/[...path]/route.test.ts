@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ANSWER_TIMEOUT_MS } from "@/modules/interviews/constants";
 import { errorBody } from "@tests/helpers/axios";
 import { cookieJar } from "@tests/helpers/cookie-jar";
+import { openStream, sseFrame, streamOf } from "@tests/helpers/sse";
 
 vi.mock("next/headers", async () => (await import("@tests/helpers/cookie-jar")).nextHeadersMock);
 
@@ -165,5 +167,102 @@ describe("/api/[...path] forwarder", () => {
 
     expect(response.status).toBe(404);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("/api/[...path] forwarder, streamed answer turn", () => {
+  const STREAM_PATH = ["interviews", "0b7c2f4e-5d1a-4c3b-9e8f-1a2b3c4d5e6f", "messages", "stream"];
+  const streamRequest = (init: RequestInit = {}) =>
+    new Request(`http://localhost/api/${STREAM_PATH.join("/")}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{}",
+      ...init,
+    });
+  const sseResponse = (body: ReadableStream<Uint8Array>) =>
+    new Response(body, { status: 200, headers: { "content-type": "text/event-stream; charset=utf-8" } });
+
+  it("passes the first event through while the backend is still writing (AC1)", async () => {
+    const upstream = openStream(sseFrame("status", { phase: "received" }));
+    fetchMock.mockResolvedValueOnce(sseResponse(upstream.body));
+
+    const response = await POST(streamRequest(), ctx(...STREAM_PATH));
+    const reader = response.body!.getReader();
+    const first = await reader.read();
+
+    expect(new TextDecoder().decode(first.value)).toContain('"phase":"received"');
+    upstream.finish();
+    expect((await reader.read()).done).toBe(true);
+  });
+
+  it("asks for an event stream with the answer budget and marks the response unbuffered (AC2)", async () => {
+    const timeout = vi.spyOn(AbortSignal, "timeout");
+    fetchMock.mockResolvedValueOnce(sseResponse(streamOf(sseFrame("reset", {}))));
+
+    const response = await POST(streamRequest(), ctx(...STREAM_PATH));
+
+    expect(sentRequest().headers.get("accept")).toBe("text/event-stream");
+    expect(timeout).toHaveBeenCalledWith(ANSWER_TIMEOUT_MS);
+    expect(response.headers.get("content-type")).toBe("text/event-stream; charset=utf-8");
+    expect(response.headers.get("cache-control")).toBe("no-cache, no-transform");
+    expect(response.headers.get("x-accel-buffering")).toBe("no");
+    timeout.mockRestore();
+  });
+
+  it("aborts the backend request when the browser leaves (EC17)", async () => {
+    const browser = new AbortController();
+    fetchMock.mockResolvedValueOnce(sseResponse(streamOf()));
+
+    await POST(streamRequest({ signal: browser.signal }), ctx(...STREAM_PATH));
+    const upstreamSignal = sentRequest().init.signal!;
+    browser.abort();
+
+    expect(upstreamSignal.aborted).toBe(true);
+  });
+
+  it.each([
+    [409, "QUESTION_NOT_CURRENT"],
+    [422, "VALIDATION_ERROR"],
+    [404, "NOT_FOUND"],
+  ])("returns a %i before the stream as buffered JSON with the same body (AC3)", async (status, code) => {
+    const body = errorBody(code, "Nope");
+    fetchMock.mockResolvedValueOnce(jsonResponse(status, body));
+
+    const response = await POST(streamRequest(), ctx(...STREAM_PATH));
+
+    expect(response.status).toBe(status);
+    expect(await response.json()).toEqual(body);
+  });
+
+  it("clears the cookie on a session-ending 401 before the stream (EC1)", async () => {
+    cookieJar.store.set("access_token", { value: "dead-token" });
+    fetchMock.mockResolvedValueOnce(jsonResponse(401, errorBody("TOKEN_EXPIRED", "Session ended")));
+
+    const response = await POST(streamRequest(), ctx(...STREAM_PATH));
+
+    expect(response.status).toBe(401);
+    expect(cookieJar.store.has("access_token")).toBe(false);
+  });
+
+  it("returns the standard 503 when the backend is unreachable (EC4)", async () => {
+    fetchMock.mockRejectedValueOnce(new TypeError("fetch failed"));
+
+    const response = await POST(streamRequest(), ctx(...STREAM_PATH));
+
+    expect(response.status).toBe(503);
+    expect((await response.json()).error.code).toBe("SERVICE_UNAVAILABLE");
+  });
+
+  it("leaves the JSON answer route buffered with Accept: application/json (AC4)", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(201, { ok: true }));
+
+    const response = await POST(
+      new Request("http://localhost/api/interviews/x/messages", { method: "POST", body: "{}" }),
+      ctx("interviews", "x", "messages"),
+    );
+
+    expect(sentRequest().headers.get("accept")).toBe("application/json");
+    expect(response.headers.get("cache-control")).toBeNull();
+    expect(await response.json()).toEqual({ ok: true });
   });
 });
