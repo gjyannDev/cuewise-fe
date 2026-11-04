@@ -11,6 +11,7 @@ import type {
   roleSchema,
   startInterviewFormSchema,
   transcriptItemSchema,
+  transcriptionResponseSchema,
   transcriptSchema,
 } from "../schemas/interviews.schema";
 
@@ -48,6 +49,14 @@ export type AnswerErrorResult =
   | { kind: "field"; message: string }
   | { kind: "toast" }
   | { kind: "unknown" };
+
+export type Transcription = z.infer<typeof transcriptionResponseSchema>;
+
+/**
+ * What to do after a failed transcription: refetch the interview (it moved on or is gone), or show `message`.
+ * The typed text is never touched either way.
+ */
+export type TranscribeErrorResult = { kind: "resync" } | { kind: "message"; message: string };
 
 /**
  * How a send ended: the backend's reply, `recovered` when a lost reply turned out to have been saved, or `cancelled`

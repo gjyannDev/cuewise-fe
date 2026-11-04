@@ -5,4 +5,5 @@ export const interviewKeys = {
   // Under detail(id): invalidating the interview also refetches its conversation.
   messages: (id: string) => [...interviewKeys.detail(id), "messages"] as const,
   answer: (id: string) => [...interviewKeys.detail(id), "answer"] as const,
+  transcribe: (id: string) => [...interviewKeys.detail(id), "transcribe"] as const,
 };

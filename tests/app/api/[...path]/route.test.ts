@@ -54,9 +54,26 @@ describe("/api/[...path] forwarder", () => {
     );
 
     const sent = sentRequest();
-    expect(sent.init.body).toBe(JSON.stringify({ title: "Mock" }));
+    expect(new TextDecoder().decode(sent.init.body as ArrayBuffer)).toBe(JSON.stringify({ title: "Mock" }));
     expect(sent.headers.get("content-type")).toBe("application/json");
     expect(response.status).toBe(201);
+  });
+
+  it("forwards a binary multipart upload byte for byte with its boundary (voice AC11)", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { text: "hi" }));
+    const audio = new Uint8Array([0x1a, 0x45, 0xdf, 0xa3, 0x00, 0xff, 0x80, 0x0d, 0x0a, 0xc3]);
+    const form = new FormData();
+    form.append("audio", new Blob([audio], { type: "audio/webm" }), "answer.webm");
+    const request = new Request("http://localhost/api/interviews/x/transcriptions", { method: "POST", body: form });
+    const expected = new Uint8Array(await request.clone().arrayBuffer());
+
+    const response = await POST(request, ctx("interviews", "x", "transcriptions"));
+
+    const sent = sentRequest();
+    expect(new Uint8Array(sent.init.body as ArrayBuffer)).toEqual(expected);
+    expect(sent.headers.get("content-type")).toBe(request.headers.get("content-type"));
+    expect(sent.headers.get("content-type")).toMatch(/^multipart\/form-data; boundary=/);
+    expect(response.status).toBe(200);
   });
 
   it("ignores an Authorization header sent by the browser (EC11)", async () => {
@@ -121,6 +138,7 @@ describe("/api/[...path] forwarder", () => {
   it.each([
     ["POST", ["interviews", "0b7c2f4e-5d1a-4c3b-9e8f-1a2b3c4d5e6f", "messages"], 45_000],
     ["POST", ["interviews"], 60_000],
+    ["POST", ["interviews", "0b7c2f4e-5d1a-4c3b-9e8f-1a2b3c4d5e6f", "transcriptions"], 25_000],
     ["GET", ["interviews", "0b7c2f4e-5d1a-4c3b-9e8f-1a2b3c4d5e6f", "messages"], 15_000],
     ["GET", ["interviews"], 15_000],
     ["POST", ["users"], 15_000],

@@ -127,3 +127,6 @@ export const answerStreamEventSchemas = {
 
 /** `?session=` on /interviews. Checked before any request is made. */
 export const sessionParamSchema = z.uuid();
+
+/** POST /interviews/{id}/transcriptions: what the candidate said, for them to review. It is not saved as an answer. */
+export const transcriptionResponseSchema = z.object({ text: z.string() });

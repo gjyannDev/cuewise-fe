@@ -3,10 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { apiClient } from "@/lib/api/api.client";
 import { ApiResponseError, NoResponseError } from "@/lib/config/api.helper";
 import { redirectIfSessionEnded } from "@/lib/config/session-redirect";
-import { START_TIMEOUT_MS } from "@/modules/interviews/constants";
+import { START_TIMEOUT_MS, TRANSCRIBE_TIMEOUT_MS } from "@/modules/interviews/constants";
 import { interviewsService } from "@/modules/interviews/services/interviews.services";
 import { AnswerStreamError } from "@/modules/interviews/utils/answer-stream-error";
-import { errorBody } from "@tests/helpers/axios";
+import { axiosErrorWith, errorBody } from "@tests/helpers/axios";
 import { sseFrame, streamOf } from "@tests/helpers/sse";
 
 // apiClient already unwraps `res.data`, so the mocks resolve with the payload itself.
@@ -200,5 +200,49 @@ describe("interviewsService", () => {
     get.mockResolvedValue({ items: [{ id: ID, kind: "question" }] });
 
     await expect(interviewsService.messages(ID)).rejects.toThrow();
+  });
+
+  describe("transcribe", () => {
+    const recording = (type: string) => new Blob([new Uint8Array([0x1a, 0x45, 0xdf, 0xa3])], { type });
+
+    it("posts the recording as the multipart part `audio` with the transcription timeout and signal (voice AC14)", async () => {
+      post.mockResolvedValue({ text: "I would add an index." });
+      const signal = new AbortController().signal;
+
+      await expect(interviewsService.transcribe(ID, recording("audio/webm;codecs=opus"), signal)).resolves.toEqual({
+        text: "I would add an index.",
+      });
+
+      const [url, body, config] = post.mock.calls[0];
+      expect(url).toBe(`/interviews/${ID}/transcriptions`);
+      expect(config).toEqual({ timeout: TRANSCRIBE_TIMEOUT_MS, signal });
+      const file = (body as FormData).get("audio") as File;
+      expect(file.type).toBe("audio/webm;codecs=opus");
+      expect(file.name).toBe("answer.webm");
+    });
+
+    it.each([
+      ["audio/mp4", "answer.mp4"],
+      ["audio/ogg;codecs=opus", "answer.ogg"],
+    ])("names a %s recording %s", async (type, name) => {
+      post.mockResolvedValue({ text: "ok" });
+
+      await interviewsService.transcribe(ID, recording(type));
+
+      expect(((post.mock.calls[0][1] as FormData).get("audio") as File).name).toBe(name);
+    });
+
+    it("rejects a response that doesn't match the contract", async () => {
+      post.mockResolvedValue({ transcript: "ok" });
+
+      await expect(interviewsService.transcribe(ID, recording("audio/webm"))).rejects.toThrow();
+    });
+
+    it("lets the backend's error through unchanged", async () => {
+      const error = axiosErrorWith(422, errorBody("NO_SPEECH", "No speech"));
+      post.mockRejectedValue(error);
+
+      await expect(interviewsService.transcribe(ID, recording("audio/webm"))).rejects.toBe(error);
+    });
   });
 });

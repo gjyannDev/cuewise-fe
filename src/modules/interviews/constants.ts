@@ -54,6 +54,38 @@ export const STALE_THREAD_MESSAGE = "Couldn't load the latest question.";
 export const ANSWER_TIMEOUT_MS = 45_000;
 /** Starting adds a job-description summary (capped at 10s) before the first question's 30s LLM budget. */
 export const START_TIMEOUT_MS = 60_000;
+/**
+ * Transcribing a recorded answer: cuewise-be gives Deepgram up to 20s (transcription_total_budget_seconds). The
+ * forwarder waits a bit longer than that, and the browser longer still, so a slow request always ends with the
+ * forwarder's clean 503 instead of whichever side happens to give up first.
+ */
+export const TRANSCRIBE_FORWARD_TIMEOUT_MS = 25_000;
+export const TRANSCRIBE_TIMEOUT_MS = 30_000;
+
+/** The composer stops a recording by itself here (cuewise-be rejects a reported duration over 125 s). */
+export const RECORDING_MAX_SECONDS = 120;
+
+/**
+ * cuewise-be's error codes for POST /interviews/{id}/transcriptions (interviews_route + core/errors.py; keep in step),
+ * with what the candidate sees for each. Anything else (no response, 503, unknown) shows the unavailable message.
+ */
+export const TRANSCRIPTION_UNAVAILABLE_MESSAGE = "Voice answers aren't available right now. You can type your answer.";
+export const RECORDING_FAILED_MESSAGE = "Couldn't process that recording. Try again.";
+export const TRANSCRIPTION_ERROR_MESSAGES: Record<string, string> = {
+  NO_SPEECH: "Didn't catch that. Try again.",
+  AUDIO_TOO_LONG: "Recordings are limited to 2 minutes.",
+  RATE_LIMITED: "Too many recordings. Wait a moment and try again.",
+  AUDIO_TOO_LARGE: RECORDING_FAILED_MESSAGE,
+  UNSUPPORTED_AUDIO: RECORDING_FAILED_MESSAGE,
+  TRANSCRIPTION_UNAVAILABLE: TRANSCRIPTION_UNAVAILABLE_MESSAGE,
+};
+
+/** Shown by the composer for problems in the browser, before anything is uploaded. */
+export const MICROPHONE_BLOCKED_MESSAGE =
+  "Microphone access is blocked. Allow it in your browser settings to answer by voice.";
+export const MICROPHONE_UNAVAILABLE_MESSAGE = "Couldn't start the microphone.";
+export const EMPTY_RECORDING_MESSAGE = TRANSCRIPTION_ERROR_MESSAGES.NO_SPEECH;
+export const RECORDING_LIMIT_MESSAGE = TRANSCRIPTION_ERROR_MESSAGES.AUDIO_TOO_LONG;
 
 /** A send with no response: the backend may still have saved it, so this never claims the answer was lost. */
 export const UNCONFIRMED_SEND_MESSAGE =

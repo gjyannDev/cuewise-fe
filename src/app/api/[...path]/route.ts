@@ -2,7 +2,7 @@ import { apiErrorBodySchema, GENERIC_ERROR_MESSAGE, isSessionErrorCode } from "@
 import { errorResponse } from "@/lib/config/bff.server";
 import { getApiUrl } from "@/lib/config/env.server";
 import { clearAccessTokenCookie, getAccessToken } from "@/modules/auth/session/auth-cookie.server";
-import { ANSWER_TIMEOUT_MS, START_TIMEOUT_MS } from "@/modules/interviews/constants";
+import { ANSWER_TIMEOUT_MS, START_TIMEOUT_MS, TRANSCRIBE_FORWARD_TIMEOUT_MS } from "@/modules/interviews/constants";
 
 /**
  * Catch-all BFF forwarder: the browser calls /api/<path>, this calls cuewise-be /api/v1/<path>
@@ -16,12 +16,14 @@ const REQUEST_TIMEOUT_MS = 15_000;
 const OWNED_BY_NEXT = new Set(["auth/login", "auth/register", "auth/logout"]);
 
 /**
- * POSTs where cuewise-be waits on the LLM (up to 30s, plus a job-description summary on start), so the default 15s
- * would cut off requests that are still succeeding. Same budgets as the browser side (interviews constants).
+ * POSTs where cuewise-be waits on a model (the LLM up to 30s, plus a job-description summary on start; Deepgram up to
+ * 20s for a recording), so the default 15s would cut off requests that are still succeeding. Same budgets as the
+ * browser side (interviews constants).
  */
 const SLOW_POSTS: { path: RegExp; timeoutMs: number }[] = [
   { path: /^interviews\/[^/]+\/messages$/, timeoutMs: ANSWER_TIMEOUT_MS },
   { path: /^interviews\/[^/]+\/messages\/stream$/, timeoutMs: ANSWER_TIMEOUT_MS },
+  { path: /^interviews\/[^/]+\/transcriptions$/, timeoutMs: TRANSCRIBE_FORWARD_TIMEOUT_MS },
   { path: /^interviews$/, timeoutMs: START_TIMEOUT_MS },
 ];
 
@@ -79,7 +81,8 @@ async function forward(request: Request, { params }: ForwardContext) {
     upstream = await fetch(url, {
       method: request.method,
       headers,
-      body: request.method === "GET" || request.method === "HEAD" ? undefined : await request.text(),
+      // Bytes, not text: a recorded answer (multipart audio) must arrive unchanged; JSON is the same on the wire.
+      body: request.method === "GET" || request.method === "HEAD" ? undefined : await request.arrayBuffer(),
       cache: "no-store",
       // A stream also ends when the browser leaves, so cuewise-be sees the disconnect and stops its LLM call.
       signal: streaming ? AbortSignal.any([budget, request.signal]) : budget,

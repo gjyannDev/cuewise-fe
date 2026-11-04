@@ -14,6 +14,7 @@ import type {
 import { AnswerStreamError } from "../utils/answer-stream-error";
 import { appendAnswerTurn } from "../utils/append-answer-turn";
 import { getAnswerErrorResult } from "../utils/get-answer-error-result";
+import { getTranscribeErrorResult } from "../utils/get-transcribe-error-result";
 import { interviewKeys } from "./interviews.keys";
 
 export function useStartInterviewMutation() {
@@ -149,6 +150,30 @@ export function useAnswerInterviewMutation(id: string, { onEvent }: AnswerStream
     // Answered elsewhere, completed, or gone: refetch so the screen shows what the backend says is current.
     onError: (error) => {
       if (getAnswerErrorResult(error).kind === "resync") {
+        return queryClient.invalidateQueries({ queryKey: interviewKeys.detail(id) });
+      }
+    },
+  });
+}
+
+type TranscribeVariables = {
+  recording: Blob;
+  /** Aborted by the composer when it goes away (another question, or the screen left), so the reply is dropped. */
+  signal: AbortSignal;
+};
+
+/**
+ * Turns a recorded answer into text for the candidate to review. Nothing is cached: the text goes into the answer
+ * box, and only Send makes it an answer. An interview that moved on or is gone refetches, like a failed answer.
+ */
+export function useTranscribeAnswerMutation(id: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationKey: interviewKeys.transcribe(id),
+    mutationFn: ({ recording, signal }: TranscribeVariables) => interviewsService.transcribe(id, recording, signal),
+    onError: (error, { signal }) => {
+      if (!signal.aborted && getTranscribeErrorResult(error).kind === "resync") {
         return queryClient.invalidateQueries({ queryKey: interviewKeys.detail(id) });
       }
     },

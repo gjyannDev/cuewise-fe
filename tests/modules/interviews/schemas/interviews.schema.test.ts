@@ -8,6 +8,7 @@ import {
   interviewSchema,
   sessionParamSchema,
   startInterviewFormSchema,
+  transcriptionResponseSchema,
   transcriptSchema,
 } from "@/modules/interviews/schemas/interviews.schema";
 
@@ -316,5 +317,21 @@ describe("transcriptSchema", () => {
 
   it("rejects a response without items", () => {
     expect(issuesFor(transcriptSchema.safeParse({}))).toEqual(["items"]);
+  });
+});
+
+describe("transcriptionResponseSchema", () => {
+  it("accepts the transcript text (voice AC14)", () => {
+    expect(transcriptionResponseSchema.parse({ text: "I would add an index." })).toEqual({
+      text: "I would add an index.",
+    });
+  });
+
+  it.each([[{}], [{ text: null }], [{ text: 42 }]])("rejects %j", (body) => {
+    expect(issuesFor(transcriptionResponseSchema.safeParse(body))).toEqual(["text"]);
+  });
+
+  it("drops unknown keys", () => {
+    expect(transcriptionResponseSchema.parse({ text: "ok", model: "nova-3" })).toEqual({ text: "ok" });
   });
 });
