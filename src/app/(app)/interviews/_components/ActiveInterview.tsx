@@ -82,6 +82,7 @@ export function ActiveInterview({
         isBusy={chat.isBusy || !openQuestion}
         autoFocus={chat.hasSent}
         onSubmit={(answer) => (openQuestion ? chat.submit(openQuestion, answer) : Promise.resolve())}
+        onTranscribe={chat.transcribe}
       />
     );
   }

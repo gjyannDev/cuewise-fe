@@ -3,15 +3,22 @@ import { useReducer, useState } from "react";
 import { useMutationCallbacks } from "@/hooks/use-mutation-callback";
 
 import { INTERVIEWER_SLOW_LABEL, RESYNC_MESSAGE, THINKING_SLOW_AFTER_MS, UNCONFIRMED_SEND_MESSAGE } from "../constants";
-import { useAnswerInterviewMutation } from "../queries/interviews.queries";
+import { useAnswerInterviewMutation, useTranscribeAnswerMutation } from "../queries/interviews.queries";
 import type { AnswerStreamEvent, TranscriptItem } from "../types/interviews.types";
 import { buildThreadView } from "../utils/build-thread-view";
 import { getAnswerErrorResult } from "../utils/get-answer-error-result";
+import { getTranscribeErrorResult } from "../utils/get-transcribe-error-result";
 import { pickThinkingLabel } from "../utils/pick-thinking-label";
 import { ANSWER_STREAM_START, type AnswerStreamState, reduceAnswerStream } from "../utils/reduce-answer-stream";
 
 /** A failed send: the composer puts the text back, with `message` under the field when the backend rejected it. */
 export type SendFailure = { message?: string };
+
+/**
+ * How a transcription ended, for the composer: the text to add, a message to show, or nothing (the composer went
+ * away, or the interview moved on and the screen is refetching).
+ */
+export type TranscribeResult = { kind: "text"; text: string } | { kind: "message"; message: string } | { kind: "none" };
 
 /** A new send starts the live turn over; every other action is a stream event. */
 type TurnAction = AnswerStreamEvent | { event: "start" };
@@ -27,6 +34,7 @@ const reduceTurn = (state: AnswerStreamState, action: TurnAction) =>
 export function useInterviewChat(sessionId: string, transcript: TranscriptItem[], questionCount: number) {
   const [turn, dispatch] = useReducer(reduceTurn, ANSWER_STREAM_START);
   const answer = useAnswerInterviewMutation(sessionId, { onEvent: dispatch });
+  const transcription = useTranscribeAnswerMutation(sessionId);
   const [label, setLabel] = useState<string>();
   const [isSlow, setIsSlow] = useState(false);
   /** The question being answered while its turn runs. */
@@ -70,6 +78,25 @@ export function useInterviewChat(sessionId: string, transcript: TranscriptItem[]
     }
   }
 
+  /** A recorded answer as text for the box. The composer aborts `signal` when it goes away; nothing is shown then. */
+  async function transcribe(recording: Blob, signal: AbortSignal): Promise<TranscribeResult> {
+    try {
+      const { text } = await transcription.mutateAsync({ recording, signal });
+      return signal.aborted ? { kind: "none" } : { kind: "text", text };
+    } catch (error) {
+      if (signal.aborted) {
+        return { kind: "none" };
+      }
+      const result = getTranscribeErrorResult(error);
+      if (result.kind === "resync") {
+        // The interview moved on or is gone: the same notice as a resynced answer (the query refetches it).
+        resyncCallbacks.onError(error);
+        return { kind: "none" };
+      }
+      return result;
+    }
+  }
+
   // Thinking until the question starts to appear (or the turn ends, when no text streams).
   const isThinking = isSending && turn.questionText === "";
   return {
@@ -84,5 +111,6 @@ export function useInterviewChat(sessionId: string, transcript: TranscriptItem[]
     /** Something was sent on this screen: new content may take focus (never on page load). */
     hasSent: label !== undefined,
     submit,
+    transcribe,
   };
 }

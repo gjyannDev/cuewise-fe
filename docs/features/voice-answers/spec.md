@@ -27,7 +27,7 @@ Measurable: with a running cuewise-be, a spoken answer of up to 120 s is transcr
   - **FE:** no new dependency (MediaRecorder and FormData are native). Vitest is node-only (no DOM), so new logic is pure units; tests mirror `src/` under `tests/`, helpers in `tests/helpers/`. Accessibility: labelled controls, keyboard-usable, visible focus, status announced.
   - **BE:** router -> controller -> repository; files prefixed with the module name; routes thin, logic in the controller; vendors sit behind a protocol in `core/ai`, called over plain `httpx` like `OpenAICompatibleProvider` (no vendor SDK); all input validated; errors raised as `AppError` subclasses with generic client messages and details in logs; ownership enforced in the controller; secrets only from env via `core/config.py`, with `.env.example` updated; rate limiting on sensitive endpoints; no PII or secrets logged.
   - **Both:** nothing is committed, staged, pushed, or opened as a PR, and no new branch is created. After code changes: FE `npx tsc --noEmit`, `npm run lint`, `npm test`, `npm run build`, then `graphify update .`; BE `uv run pytest`, then `graphify update .`.
-- Process: a two-repo feature. **Phase 0 = spike**, **Phase 1 = cuewise-be**, **Phase 2 = cuewise-fe**. cuewise-be's plan/task may reference this spec.
+- Process: a two-repo feature. **Phase 0 = spike**, **Phase 1 = cuewise-be**, **Phase 2 = cuewise-fe**. cuewise-be's plan/task may reference this spec. Phase 1 is built against a fake transcriber and a scripted `httpx` transport, so it does not wait for the spike (decided 2026-11-04); the spike must pass before Phase 2 starts.
 
 ## User Flow
 1. The candidate, on an open question, presses the mic button in the answer box. The browser asks for microphone permission the first time.
@@ -39,14 +39,14 @@ Measurable: with a running cuewise-be, a spoken answer of up to 120 s is transcr
 
 ## Requirements
 
-### Phase 0: Spike (before Phase 1 starts)
+### Phase 0: Spike (before Phase 2 starts)
 - With a Deepgram key, send real recordings to the pre-recorded endpoint: a WebM/Opus clip from Chrome and an MP4/AAC clip from Safari (and an OGG clip from Firefox if it records OGG), each 30 s and 120 s, of English technical speech.
 - Confirm and record in this feature's `task.md`:
   - each container is accepted as sent by `MediaRecorder` (with its declared content type), with no conversion;
   - the model chosen (default: the current Nova-3 general model) and the transcript quality on terms such as "useEffect", "Kubernetes", "REST", "SQL", with and without keyterms;
   - whether keyterms are needed for v1 (if yes, v1 uses a fixed, short per-role list kept in BE constants);
   - latency for 30 s and 120 s clips;
-  - the request option that opts the audio out of Deepgram's model-improvement program, and Deepgram's retention terms;
+  - Deepgram's retention terms and Model Improvement Program terms (v1 stays in the program; see Decisions);
   - the starter credit's expiry and what happens when it runs out; a usage alert is set in the Deepgram console.
 - If a browser's container is not accepted, or accuracy is unusable: **stop and re-plan** (e.g. a FE conversion step, or self-hosted Whisper behind the same contract). No fallback is pre-decided.
 
@@ -60,12 +60,12 @@ Measurable: with a running cuewise-be, a spoken answer of up to 120 s is transcr
 **Input validation**
 - Accepted audio: WebM, OGG, MP4/M4A and WAV. The declared content type must be one of these **and** the file content must start with the matching container signature; anything else is `415 UNSUPPORTED_AUDIO`.
 - Larger than 3 MB: `413 AUDIO_TOO_LARGE`; the BE never reads more than the cap into memory. (120 s of Opus or AAC at browser defaults is about 1-2 MB.)
-- A missing file part, or an empty file, is `422` with the project's standard error body.
+- A missing file part is `422` (request validation) with the project's standard error body. An empty file (0 bytes) is `422 NO_SPEECH`, the same code as a silent clip, so the client needs no extra message; the transcriber is not called.
 - Duration is bounded by the size cap and the FE's 120 s auto-stop (the BE cannot measure compressed audio without decoding it). If Deepgram reports a duration over 125 s, the endpoint returns `422 AUDIO_TOO_LONG` and discards the text.
 
 **Transcription**
 - A `Transcriber` contract in `core/ai` (separate from the text-only `LLMProvider`), with a Deepgram implementation over plain `httpx`: the audio bytes are sent as they were uploaded, with their content type, to Deepgram's pre-recorded endpoint. It is built once at startup next to the LLM provider and closed on shutdown.
-- Request options: English, the configured model, smart formatting/punctuation on, filler words off, the model-improvement opt-out on, and keyterms only if Phase 0 decided they are needed.
+- Request options: English, the configured model, smart formatting/punctuation on, filler words off, and keyterms only if Phase 0 decided they are needed. `mip_opt_out` is **not** sent: Deepgram documents a price impact for opting out of its Model Improvement Program, and v1 stays in the program (decided 2026-11-04).
 - Settings: `DEEPGRAM_API_KEY` (optional; blank = transcription off), `DEEPGRAM_MODEL` (default the model chosen in Phase 0), `DEEPGRAM_BASE_URL` (default Deepgram's public API), a timeout and total budget (the request finishes in under 20 s). `.env.example` documents them. The key is held as a secret and never logged or returned.
 - Retries follow the same rules as the LLM calls (only on timeout, 429, 5xx; within the total budget).
 - A blank transcript returns `422 NO_SPEECH`. The text is trimmed and capped at the answer limit (2000 characters).
@@ -83,7 +83,7 @@ Measurable: with a running cuewise-be, a spoken answer of up to 120 s is transcr
 
 **Forwarder (`/api/[...path]`)**
 - Request bodies are forwarded as bytes, so binary and multipart uploads arrive intact; JSON routes behave exactly as before. The incoming `Content-Type` (including the multipart boundary) is passed on.
-- `POST interviews/<id>/transcriptions` gets its own timeout budget (a shared constant with the browser side, a little above the BE's budget) instead of the 15 s default.
+- `POST interviews/<id>/transcriptions` gets its own timeout budget instead of the 15 s default: **25 s** in the forwarder (above the BE's 20 s budget). The browser's own timeout for the upload is longer, **30 s**, so a slow request always ends with the forwarder's clean `503` rather than whichever side gives up first. Both values are shared constants in `modules/interviews/constants.ts`.
 
 **Recording (hook + utils)**
 - A hook owns the microphone: request permission, record, stop, cancel, elapsed time, and error states. It releases the microphone on stop, cancel, error and unmount, and stops by itself at 120 s.
@@ -104,7 +104,7 @@ Measurable: with a running cuewise-be, a spoken answer of up to 120 s is transcr
 ### Non-Functional
 - **Latency:** stop -> text in box within 10 s for a 120 s clip (typical under 5 s for 30 s of speech); recording starts within 1 s of permission being granted.
 - **Cost/abuse bounds:** one clip is capped by size, duration and the per-user rate limit; each clip is one Deepgram request; the interviewer's Gemini calls are unchanged.
-- **Security and privacy:** audio is held only in browser memory and in flight; never stored, logged or traced; sent to Deepgram with the model-improvement opt-out; the Deepgram key and JWT never reach JS; the transcript is untrusted plain text; the endpoint is default-deny with ownership checks.
+- **Security and privacy:** audio is held only in browser memory and in flight; never stored, logged or traced; sent to Deepgram, which may use it in its Model Improvement Program (v1 does not opt out; a cost decision); the Deepgram key and JWT never reach JS; the transcript is untrusted plain text; the endpoint is default-deny with ownership checks.
 - **Compatibility:** latest Chrome, Edge, Firefox, Safari (macOS and iOS). Microphone access needs HTTPS (`localhost` is exempt); any `Permissions-Policy` header must allow `microphone=(self)`.
 - **Maintainability:** the vendor sits behind a `Transcriber` contract (swapping it is a new class plus config); validation and container picking are pure and unit-tested.
 
@@ -132,7 +132,7 @@ Measurable: with a running cuewise-be, a spoken answer of up to 120 s is transcr
 - **Phase 0 spike must pass** (containers accepted as recorded, usable accuracy). If it does not, stop and re-plan.
 - Assumptions to verify (Phase 0 unless noted):
   - Deepgram's pre-recorded endpoint accepts raw WebM/Opus, MP4/AAC and OGG bodies from `MediaRecorder` with their declared content types *(assumption — verify)*.
-  - Nova-3 supports keyterm prompting for English and a per-request model-improvement opt-out *(assumption — verify)*.
+  - Nova-3 keyterm prompting (`keyterm`, repeated), `smart_format`, `filler_words`, `language` and `mip_opt_out` exist on `POST /v1/listen` *(confirmed in Deepgram's API reference, 2026-11-04; behavior still verified in the spike)*.
   - Deepgram's response reports the audio duration, so `AUDIO_TOO_LONG` can be enforced *(assumption — verify)*.
   - The $200 starter credit's expiry and post-credit billing *(assumption — verify in the console)*.
   - A 120 s clip at browser defaults stays under 3 MB on every browser *(assumption — verify by hand in Phase 2)*.
@@ -165,21 +165,21 @@ Measurable: with a running cuewise-be, a spoken answer of up to 120 s is transcr
 
 ## Acceptance Criteria
 **Phase 0 (spike)**
-- [ ] **AC1:** `task.md` records, for Chrome WebM, Safari MP4 and (if available) Firefox OGG: accepted as sent or not; the model chosen; transcript quality on technical terms with and without keyterms and whether v1 uses keyterms; latency at 30 s and 120 s; the model-improvement opt-out option; the credit expiry; and that a usage alert is set. Phase 1 starts only if every target browser's container is accepted with usable accuracy.
+- [ ] **AC1:** `task.md` records, for Chrome WebM, Safari MP4 and (if available) Firefox OGG: accepted as sent or not; the model chosen; transcript quality on technical terms with and without keyterms and whether v1 uses keyterms; latency at 30 s and 120 s; Deepgram's retention and Model Improvement Program terms; the credit expiry; and that a usage alert is set. Phase 2 starts only if every target browser's container is accepted with usable accuracy.
 
 **Phase 1: Backend**
 - [ ] **AC2:** `POST /api/v1/interviews/{id}/transcriptions` with an allowed recording from the owner of an in-progress session returns `200 {"text": "..."}` containing only the fake transcriber's text.
 - [ ] **AC3:** An anonymous request is rejected (`401`); another user's or an unknown session returns `404`; a completed/abandoned session returns `409 SESSION_NOT_IN_PROGRESS` (EC17).
-- [ ] **AC4:** A disallowed content type or a content/signature mismatch returns `415 UNSUPPORTED_AUDIO`; over 3 MB returns `413 AUDIO_TOO_LARGE` without reading past the cap; a missing or empty file returns `422`; in all cases the transcriber is never called (EC15).
+- [ ] **AC4:** A disallowed content type or a content/signature mismatch returns `415 UNSUPPORTED_AUDIO`; over 3 MB returns `413 AUDIO_TOO_LARGE` without reading past the cap; a missing file part returns `422` and an empty file returns `422 NO_SPEECH`; in all cases the transcriber is never called (EC15).
 - [ ] **AC5:** A blank transcript returns `422 NO_SPEECH`; a reported duration over 125 s returns `422 AUDIO_TOO_LONG`; a transcript over 2000 characters is capped to 2000 (EC6, EC16, EC20).
 - [ ] **AC6:** A vendor failure after retries (timeout, 429, 5xx, other 4xx, bad response), or no key configured, returns `503 TRANSCRIPTION_UNAVAILABLE` with a generic message and no internals; the app starts and interviews work without a key (EC13, EC22).
 - [ ] **AC7:** The 11th request from the same user within a minute returns `429 RATE_LIMITED` with `Retry-After` and does not call the transcriber; another user is unaffected (EC14, EC21).
-- [ ] **AC8:** The Deepgram transcriber sends the uploaded bytes unchanged with their content type, the key in the auth header, and the specified options (English, model, smart format, no filler words, model-improvement opt-out, keyterms only if decided); parses the transcript and duration; retries only on timeout/429/5xx within the budget; and maps every other failure to the transcriber's error (scripted `httpx` transport tests). The contract is separate from `LLMProvider`; settings are documented in `.env.example`.
+- [ ] **AC8:** The Deepgram transcriber sends the uploaded bytes unchanged with their content type, the key in the auth header, and the specified options (English, model, smart format, no filler words, no `mip_opt_out`, keyterms only if decided); parses the transcript and duration; retries only on timeout/429/5xx within the budget; and maps every other failure to the transcriber's error (scripted `httpx` transport tests). The contract is separate from `LLMProvider`; settings are documented in `.env.example`.
 - [ ] **AC9:** No audio bytes, transcript text or API key appear in application logs or Langfuse; each request logs one metadata line (user id, session id, bytes, content type, duration, model, latency, outcome); audio is not persisted (verified in tests via captured logs).
 - [ ] **AC10:** BE tests pass for every case above, and the existing test suite still passes.
 
 **Phase 2: Frontend**
-- [ ] **AC11:** The forwarder delivers a binary multipart body to the upstream byte for byte (including the boundary header) and uses the transcription timeout for `interviews/<id>/transcriptions`; the existing forwarder tests for JSON and streaming routes pass unchanged.
+- [ ] **AC11:** The forwarder delivers a binary multipart body to the upstream byte for byte (including the boundary header) and uses the 25 s transcription timeout for `interviews/<id>/transcriptions`; the browser's upload timeout is 30 s; the existing forwarder tests for JSON and streaming routes pass unchanged.
 - [ ] **AC12:** The container picker returns WebM/Opus, then MP4, then OGG by browser support, and reports "unsupported" when none is available (unit tests; EC1).
 - [ ] **AC13:** The recorder hook starts and stops recording, reports elapsed time, auto-stops at 120 s (EC5), releases the microphone on stop, cancel, error and unmount (EC4, EC9), skips the upload for an empty recording (EC23), and reports permission-denied and no-device as distinct states (EC2, EC3).
 - [ ] **AC14:** The service uploads the recording as multipart with its content type and returns the parsed `{ text }`; the response and error shapes are validated with zod, and each BE error code maps to the message in UX Requirements (EC6, EC12-EC17).
