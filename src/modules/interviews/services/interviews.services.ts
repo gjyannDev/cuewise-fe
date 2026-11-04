@@ -1,6 +1,6 @@
+import { apiClient } from "@/lib/api/api.client";
 import { readSseStream } from "@/lib/api/sse";
 import { ApiResponseError, NoResponseError } from "@/lib/config/api.helper";
-import { API } from "@/lib/config/axios.client";
 import { redirectIfSessionEnded } from "@/lib/config/session-redirect";
 
 import { START_TIMEOUT_MS } from "../constants";
@@ -30,13 +30,13 @@ class InterviewsService {
   private readonly basePath = "/interviews";
 
   async start(params: StartInterviewRequest): Promise<Interview> {
-    const response = await API.post(this.basePath, params, { timeout: START_TIMEOUT_MS });
-    return interviewSchema.parse(response.data);
+    const data = await apiClient.post<unknown>(this.basePath, params, { timeout: START_TIMEOUT_MS });
+    return interviewSchema.parse(data);
   }
 
   async get(id: string): Promise<Interview> {
-    const response = await API.get(`${this.basePath}/${encodeURIComponent(id)}`);
-    return interviewSchema.parse(response.data);
+    const data = await apiClient.get<unknown>(`${this.basePath}/${encodeURIComponent(id)}`);
+    return interviewSchema.parse(data);
   }
 
   /**
@@ -85,8 +85,8 @@ class InterviewsService {
   }
 
   async messages(id: string): Promise<Transcript> {
-    const response = await API.get(`${this.basePath}/${encodeURIComponent(id)}/messages`);
-    return transcriptSchema.parse(response.data);
+    const data = await apiClient.get<unknown>(`${this.basePath}/${encodeURIComponent(id)}/messages`);
+    return transcriptSchema.parse(data);
   }
 }
 

@@ -1,4 +1,5 @@
-import { API } from "@/lib/config/axios.client";
+import { apiClient } from "@/lib/api/api.client";
+
 import { currentProfileSchema } from "../schemas/auth.schema";
 import type { AuthCredentials, CurrentUserProfile } from "../types/auth.types";
 
@@ -10,22 +11,22 @@ class AuthService {
   private readonly authBasePath = "/auth";
 
   async login(params: AuthCredentials): Promise<CurrentUserProfile> {
-    const response = await API.post(`${this.authBasePath}/login`, params);
-    return currentProfileSchema.parse(response.data);
+    const data = await apiClient.post<unknown>(`${this.authBasePath}/login`, params);
+    return currentProfileSchema.parse(data);
   }
 
   async register(params: AuthCredentials): Promise<CurrentUserProfile> {
-    const response = await API.post(`${this.authBasePath}/register`, params);
-    return currentProfileSchema.parse(response.data);
+    const data = await apiClient.post<unknown>(`${this.authBasePath}/register`, params);
+    return currentProfileSchema.parse(data);
   }
 
   async logout(): Promise<void> {
-    await API.post(`${this.authBasePath}/logout`);
+    await apiClient.post<unknown>(`${this.authBasePath}/logout`, undefined);
   }
 
   async me(): Promise<CurrentUserProfile> {
-    const response = await API.get(`${this.authBasePath}/me`);
-    return currentProfileSchema.parse(response.data);
+    const data = await apiClient.get<unknown>(`${this.authBasePath}/me`);
+    return currentProfileSchema.parse(data);
   }
 }
 

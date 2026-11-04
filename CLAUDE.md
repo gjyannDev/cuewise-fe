@@ -36,17 +36,18 @@ src/
     api/                       # Route Handlers (BFF to cuewise-be)
     providers.tsx              # client providers (QueryClientProvider, Toaster, ...)
   components/ui/               # shadcn primitives (generated; don't put feature logic here)
+  components/ai-elements/      # AI Elements registry components (conversation, shimmer; added via the `@ai-elements` registry in components.json; same rules as ui/)
   shared/                      # reusable, feature-agnostic building blocks
-    forms/                     # TextField, PasswordField, SelectField, CheckboxField, TextAreaField
+    forms/                     # TextField, PasswordField, SelectField, CheckboxField, CheckBoxFieldWithDescription, RadioGroupField, SliderField, TextAreaField
     ui/                        # composed UI pieces (BreadCrumbs, ...)
   hooks/                       # shared hooks (use-mutation-callback, ...)
   lib/
-    api/                       # apiClient wrapper
+    api/                       # api.client.ts (`apiClient`: the HTTP wrapper every service uses) + generic transport helpers (sse.ts: SSE frame parser)
     config/                    # axios clients, query client, api error helpers
     utils.ts                   # cn() and other generic helpers
   modules/
     <feature>/                 # e.g. auth/
-      services/<feature>.services.ts   # HTTP calls only (via apiClient/API). Parse responses with zod. No React.
+      services/<feature>.services.ts   # HTTP calls only, always via `apiClient` (`@/lib/api/api.client`). Parse responses with zod. No React.
       queries/<feature>.keys.ts        # query-key factory (`<feature>Keys.all`, `.detail(id)`, ...)
       queries/<feature>.queries.ts     # useQuery/useMutation hooks wrapping the service. No JSX.
       schemas/<feature>.schema.ts      # zod schemas (forms, requests, responses)
@@ -59,8 +60,9 @@ tests/                         # all tests, mirroring src/ (e.g. tests/modules/a
 
 Layer rules:
 - **Services** are the only place that talks HTTP. Plain async functions/classes, no hooks, no toasts, no routing.
+- **Always use `apiClient`** (`src/lib/api/api.client.ts`) for HTTP in services. It wraps the `API` axios instance (its interceptor handles the session-expired redirect) and returns the payload, so services `zod.parse` its result directly. Never import `API` or `axios` in a service. If a call needs something `apiClient` lacks (a per-call config on `put`/`patch`/`delete`, an upload), add it to `apiClient` instead of bypassing it. The only exception is reading a streamed response (SSE), which axios can't do: use `fetch` there, with the shared `ApiResponseError`/`NoResponseError` and `redirectIfSessionEnded` (see `answerStream`).
 - **Queries** are the only place components get server data from. They own query keys, cache updates (`setQueryData`, `invalidateQueries`) and pass toasts/side effects via `useMutationCallbacks`.
-- **Components** never import services, axios or `apiClient` directly, and never build query keys inline.
+- **Components** never import services, axios, `API` or `apiClient` directly, and never build query keys inline.
 - Layers only call downward: component → query → service. Never skip a layer.
 - Features don't import each other's internals (services/stores); use the other feature's exported queries/hooks.
 - Feature-agnostic code goes in `shared/`, `hooks/` or `lib/`, never duplicated across modules.

@@ -1,19 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { apiClient } from "@/lib/api/api.client";
 import { ApiResponseError, NoResponseError } from "@/lib/config/api.helper";
-import { API } from "@/lib/config/axios.client";
 import { redirectIfSessionEnded } from "@/lib/config/session-redirect";
 import { START_TIMEOUT_MS } from "@/modules/interviews/constants";
 import { interviewsService } from "@/modules/interviews/services/interviews.services";
 import { AnswerStreamError } from "@/modules/interviews/utils/answer-stream-error";
-import { errorBody, ok } from "@tests/helpers/axios";
+import { errorBody } from "@tests/helpers/axios";
 import { sseFrame, streamOf } from "@tests/helpers/sse";
 
-vi.mock("@/lib/config/axios.client", () => ({ API: { get: vi.fn(), post: vi.fn() } }));
+// apiClient already unwraps `res.data`, so the mocks resolve with the payload itself.
+vi.mock("@/lib/api/api.client", () => ({ apiClient: { get: vi.fn(), post: vi.fn() } }));
 vi.mock("@/lib/config/session-redirect", () => ({ redirectIfSessionEnded: vi.fn() }));
 
-const post = vi.mocked(API.post);
-const get = vi.mocked(API.get);
+const post = vi.mocked(apiClient.post);
+const get = vi.mocked(apiClient.get);
 
 const ID = "0b7c2f4e-5d1a-4c3b-9e8f-1a2b3c4d5e6f";
 const interview = {
@@ -44,7 +45,7 @@ describe("interviewsService", () => {
   });
 
   it("start posts the request body to /interviews with the start timeout and returns the parsed interview", async () => {
-    post.mockResolvedValue(ok(interview, 201));
+    post.mockResolvedValue(interview);
     const body = { role: "backend", level: "junior", interview_type: "mixed", question_count: 5 } as const;
 
     await expect(interviewsService.start(body)).resolves.toEqual(interview);
@@ -52,14 +53,14 @@ describe("interviewsService", () => {
   });
 
   it("get requests the interview by id", async () => {
-    get.mockResolvedValue(ok(interview));
+    get.mockResolvedValue(interview);
 
     await expect(interviewsService.get(ID)).resolves.toEqual(interview);
     expect(get).toHaveBeenCalledWith(`/interviews/${ID}`);
   });
 
   it("rejects a response that doesn't match the contract", async () => {
-    get.mockResolvedValue(ok({ session: { id: ID } }));
+    get.mockResolvedValue({ session: { id: ID } });
 
     await expect(interviewsService.get(ID)).rejects.toThrow();
   });
@@ -189,14 +190,14 @@ describe("interviewsService", () => {
         },
       ],
     };
-    get.mockResolvedValue(ok(transcript));
+    get.mockResolvedValue(transcript);
 
     await expect(interviewsService.messages(ID)).resolves.toEqual(transcript);
     expect(get).toHaveBeenCalledWith(`/interviews/${ID}/messages`);
   });
 
   it("messages rejects a transcript that doesn't match the contract", async () => {
-    get.mockResolvedValue(ok({ items: [{ id: ID, kind: "question" }] }));
+    get.mockResolvedValue({ items: [{ id: ID, kind: "question" }] });
 
     await expect(interviewsService.messages(ID)).rejects.toThrow();
   });
