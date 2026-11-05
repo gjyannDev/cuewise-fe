@@ -1,6 +1,11 @@
+import type { InterviewListParams } from "../types/interviews.types";
+
 export const interviewKeys = {
   all: ["interviews"] as const,
   start: () => [...interviewKeys.all, "start"] as const,
+  // History pages, one per page/filter; a sibling of detail(id), so invalidating one never touches the other.
+  lists: () => [...interviewKeys.all, "list"] as const,
+  list: (params: InterviewListParams) => [...interviewKeys.lists(), params] as const,
   detail: (id: string) => [...interviewKeys.all, "detail", id] as const,
   // Under detail(id): invalidating the interview also refetches its conversation.
   messages: (id: string) => [...interviewKeys.detail(id), "messages"] as const,

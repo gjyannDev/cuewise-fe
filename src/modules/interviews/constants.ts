@@ -1,4 +1,5 @@
 export const INTERVIEWS_ROUTE = "/interviews";
+export const HISTORY_ROUTE = "/history";
 
 // Mirrors cuewise-be app/modules/interviews/interviews_constants.py; keep both in step.
 export const ROLES = ["frontend", "backend", "fullstack", "mobile", "data"] as const;
@@ -130,3 +131,52 @@ export const DEFAULT_START_VALUES = {
   question_count: 5,
   job_description: "",
 } as const;
+
+// --- History (/history): the user's past interviews, from GET /interviews ---
+
+/** Rows-per-page choices for the history (cuewise-be allows up to 100); the first is the default. */
+export const HISTORY_PAGE_SIZES = [10, 20, 50] as const;
+export const HISTORY_PAGE_SIZE = HISTORY_PAGE_SIZES[0];
+
+/**
+ * The columns GET /interviews can sort by (cuewise-be `HistorySortColumn`; keep in step). They are also the response's
+ * field names, so they double as the TanStack column ids.
+ */
+export const HISTORY_SORT_COLUMNS = ["created_at", "role", "level", "interview_type", "status"] as const;
+export const SORT_DIRECTIONS = ["asc", "desc"] as const;
+
+/** `/history` with no query string: page 1, 10 rows, newest first, every status. Defaults are never written to it. */
+export const HISTORY_DEFAULT_PARAMS = {
+  page: 1,
+  size: HISTORY_PAGE_SIZE,
+  sort: "created_at",
+  order: "desc",
+} as const satisfies {
+  page: number;
+  size: number;
+  sort: (typeof HISTORY_SORT_COLUMNS)[number];
+  order: (typeof SORT_DIRECTIONS)[number];
+};
+
+export const SESSION_STATUS_LABELS: Record<(typeof SESSION_STATUSES)[number], string> = {
+  in_progress: "In progress",
+  completed: "Completed",
+  abandoned: "Abandoned",
+};
+
+/** The status filter: "all" sends no `status` to the backend. */
+export const HISTORY_STATUS_ALL = "all";
+export const HISTORY_STATUS_OPTIONS = [
+  { value: HISTORY_STATUS_ALL, label: "All" },
+  ...SESSION_STATUSES.map((value) => ({ value, label: SESSION_STATUS_LABELS[value] })),
+] as const;
+
+export const HISTORY_TABLE_LABEL = "Your interviews";
+export const HISTORY_EMPTY_TITLE = "No interviews yet";
+export const HISTORY_EMPTY_DESCRIPTION = "Your interviews show up here once you start one.";
+export const HISTORY_FILTER_EMPTY_DESCRIPTION = "None of your interviews have this status. Show all to see the rest.";
+export const HISTORY_PAST_END_TITLE = "Nothing on this page";
+export const HISTORY_PAST_END_DESCRIPTION = "This page is past the end of your interviews.";
+export const HISTORY_ERROR_TITLE = "We couldn't load your interviews";
+export const HISTORY_ERROR_DESCRIPTION = "Check your connection and try again.";
+export const HISTORY_REFRESH_ERROR = "Couldn't load this page. Showing the last one loaded.";

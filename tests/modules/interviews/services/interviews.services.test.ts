@@ -7,6 +7,7 @@ import { START_TIMEOUT_MS, TRANSCRIBE_TIMEOUT_MS } from "@/modules/interviews/co
 import { interviewsService } from "@/modules/interviews/services/interviews.services";
 import { AnswerStreamError } from "@/modules/interviews/utils/answer-stream-error";
 import { axiosErrorWith, errorBody } from "@tests/helpers/axios";
+import { interviewListItem } from "@tests/helpers/interviews";
 import { sseFrame, streamOf } from "@tests/helpers/sse";
 
 // apiClient already unwraps `res.data`, so the mocks resolve with the payload itself.
@@ -200,6 +201,48 @@ describe("interviewsService", () => {
     get.mockResolvedValue({ items: [{ id: ID, kind: "question" }] });
 
     await expect(interviewsService.messages(ID)).rejects.toThrow();
+  });
+
+  describe("list", () => {
+    const page = { items: [interviewListItem()], total: 1, limit: 10, offset: 20 };
+
+    it("requests one page of /interviews with the query params and returns the parsed page (history AC2)", async () => {
+      get.mockResolvedValue(page);
+
+      await expect(interviewsService.list({ limit: 10, offset: 20, status: "completed" })).resolves.toEqual(page);
+      expect(get).toHaveBeenCalledWith("/interviews", { params: { limit: 10, offset: 20, status: "completed" } });
+    });
+
+    it("sends no status without a filter (history AC2)", async () => {
+      get.mockResolvedValue(page);
+
+      await interviewsService.list({ limit: 10, offset: 0 });
+
+      expect(get).toHaveBeenCalledWith("/interviews", { params: { limit: 10, offset: 0 } });
+    });
+
+    it("forwards a sort to the backend (R4)", async () => {
+      get.mockResolvedValue(page);
+
+      await interviewsService.list({ limit: 20, offset: 40, sort_by: "role", sort_dir: "asc" });
+
+      expect(get).toHaveBeenCalledWith("/interviews", {
+        params: { limit: 20, offset: 40, sort_by: "role", sort_dir: "asc" },
+      });
+    });
+
+    it("rejects a page that doesn't match the contract (history EC10)", async () => {
+      get.mockResolvedValue({ ...page, items: [interviewListItem({ status: "paused" as never })] });
+
+      await expect(interviewsService.list({ limit: 10, offset: 0 })).rejects.toThrow();
+    });
+
+    it("lets the backend's error through unchanged", async () => {
+      const failure = axiosErrorWith(503, errorBody("SERVICE_UNAVAILABLE", "Try again"));
+      get.mockRejectedValue(failure);
+
+      await expect(interviewsService.list({ limit: 10, offset: 0 })).rejects.toBe(failure);
+    });
   });
 
   describe("transcribe", () => {

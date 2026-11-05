@@ -3,7 +3,12 @@ import type { TranscriptItem } from "../types/interviews.types";
 
 export const formatQuestionCount = (count: number) => `${count} ${count === 1 ? "question" : "questions"}`;
 
+export const formatInterviewCount = (count: number) => `${count} ${count === 1 ? "interview" : "interviews"}`;
+
 export const formatQuestionPosition = (position: number, total: number) => `Question ${position} of ${total}`;
+
+/** The history table's progress: main questions finished out of the interview's count (follow-ups aren't counted). */
+export const formatProgress = (answered: number, total: number) => `${answered} of ${total}`;
 
 /** The caption above a question: main questions are counted by main number, follow-ups aren't counted. */
 export const formatQuestionCaption = (

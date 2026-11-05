@@ -2,6 +2,8 @@ import { z } from "zod";
 
 import {
   ANSWER_MAX_LENGTH,
+  HISTORY_PAGE_SIZES,
+  HISTORY_SORT_COLUMNS,
   INTERVIEW_TYPES,
   JOB_DESCRIPTION_MAX_LENGTH,
   LEVELS,
@@ -11,6 +13,7 @@ import {
   QUESTION_KINDS,
   ROLES,
   SESSION_STATUSES,
+  SORT_DIRECTIONS,
   TRANSCRIPT_KINDS,
   TRANSCRIPT_ROLES,
   TURN_PHASES,
@@ -128,5 +131,48 @@ export const answerStreamEventSchemas = {
 /** `?session=` on /interviews. Checked before any request is made. */
 export const sessionParamSchema = z.uuid();
 
+/** `?page=` on /history: a positive whole number written plainly (no sign, spaces, decimals or exponent). */
+export const historyPageParamSchema = z
+  .string()
+  .regex(/^[1-9]\d*$/)
+  .transform(Number)
+  .refine(Number.isSafeInteger);
+
+/** `?status=` on /history: one session status; anything else means no filter. */
+export const historyStatusParamSchema = z.enum(SESSION_STATUSES);
+
+/** `?size=` on /history: one of the offered page sizes, written plainly. */
+export const historySizeParamSchema = z
+  .enum(HISTORY_PAGE_SIZES.map(String) as [string, ...string[]])
+  .transform(Number);
+
+/** `?sort=` and `?order=` on /history: a column cuewise-be can sort by, and its direction. */
+export const historySortParamSchema = z.enum(HISTORY_SORT_COLUMNS);
+export const historyOrderParamSchema = z.enum(SORT_DIRECTIONS);
+
 /** POST /interviews/{id}/transcriptions: what the candidate said, for them to review. It is not saved as an answer. */
 export const transcriptionResponseSchema = z.object({ text: z.string() });
+
+/**
+ * One row of GET /interviews (the history table). No job description or interview content: the backend leaves them
+ * out. `answered_count` counts main questions finished (follow-ups don't count), 0..question_count.
+ */
+export const interviewListItemSchema = z.object({
+  id: z.uuid(),
+  role: roleSchema,
+  level: levelSchema,
+  interview_type: interviewTypeSchema,
+  status: z.enum(SESSION_STATUSES),
+  question_count: z.number().int(),
+  answered_count: z.number().int(),
+  // A real timestamp, so formatting it can't fail while the table renders.
+  created_at: z.iso.datetime({ offset: true }),
+});
+
+/** GET /interviews: one page of the user's interviews, newest first. `total` counts every match of the filter. */
+export const interviewListSchema = z.object({
+  items: z.array(interviewListItemSchema),
+  total: z.number().int(),
+  limit: z.number().int(),
+  offset: z.number().int(),
+});

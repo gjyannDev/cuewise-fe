@@ -1,4 +1,10 @@
-import type { AnswerResponse, InterviewQuestion, Reaction, TranscriptItem } from "@/modules/interviews/types/interviews.types";
+import type {
+  AnswerResponse,
+  InterviewListItem,
+  InterviewQuestion,
+  Reaction,
+  TranscriptItem,
+} from "@/modules/interviews/types/interviews.types";
 
 export const SESSION_ID = "0b7c2f4e-5d1a-4c3b-9e8f-1a2b3c4d5e6f";
 export const Q1 = "6f5e4d3c-2b1a-4f9e-8d7c-6b5a4f3e2d1c";
@@ -59,5 +65,20 @@ export function answerResponse(next?: NextQuestion, reaction: Reaction = REACTIO
           ...next,
         }
       : null,
+  };
+}
+
+/** One row of GET /interviews (the history list): an in-progress backend interview unless overridden. */
+export function interviewListItem(overrides: Partial<InterviewListItem> = {}): InterviewListItem {
+  return {
+    id: SESSION_ID,
+    role: "backend",
+    level: "junior",
+    interview_type: "behavioral",
+    status: "in_progress",
+    question_count: 5,
+    answered_count: 2,
+    created_at: "2026-11-04T09:30:00Z",
+    ...overrides,
   };
 }

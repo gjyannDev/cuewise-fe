@@ -1,10 +1,13 @@
 import type { z } from "zod";
 
+import type { HISTORY_SORT_COLUMNS, SESSION_STATUSES, SORT_DIRECTIONS } from "../constants";
 import type {
   answerFormSchema,
   answerStreamEventSchemas,
   answerRequestSchema,
   answerResponseSchema,
+  interviewListItemSchema,
+  interviewListSchema,
   interviewSchema,
   interviewTypeSchema,
   levelSchema,
@@ -82,6 +85,33 @@ export type AnswerStreamEvent = {
 
 export type TranscriptItem = z.infer<typeof transcriptItemSchema>;
 export type Transcript = z.infer<typeof transcriptSchema>;
+
+export type SessionStatus = (typeof SESSION_STATUSES)[number];
+export type InterviewListItem = z.infer<typeof interviewListItemSchema>;
+export type InterviewList = z.infer<typeof interviewListSchema>;
+export type HistorySortColumn = (typeof HISTORY_SORT_COLUMNS)[number];
+export type SortDirection = (typeof SORT_DIRECTIONS)[number];
+
+/**
+ * `/history`'s URL state after validation, defaults filled in: a 1-based page, rows per page, the sort column and
+ * direction, and an optional status filter (none means all).
+ */
+export type HistoryParams = {
+  page: number;
+  size: number;
+  sort: HistorySortColumn;
+  order: SortDirection;
+  status?: SessionStatus;
+};
+
+/** The GET /interviews query string for one history page. */
+export type InterviewListParams = {
+  limit: number;
+  offset: number;
+  status?: SessionStatus;
+  sort_by?: HistorySortColumn;
+  sort_dir?: SortDirection;
+};
 
 /**
  * A transcript line as the thread renders it. `key` is `position:kind`, stable across refetches (ids of a just-sent

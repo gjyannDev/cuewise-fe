@@ -1,4 +1,4 @@
-import { skipToken, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, skipToken, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 
 import { ANSWER_TIMEOUT_MS } from "../constants";
@@ -8,6 +8,7 @@ import type {
   AnswerRequest,
   AnswerStreamEvent,
   Interview,
+  InterviewListParams,
   StartInterviewRequest,
   Transcript,
 } from "../types/interviews.types";
@@ -24,7 +25,20 @@ export function useStartInterviewMutation() {
     mutationKey: interviewKeys.start(),
     mutationFn: (params: StartInterviewRequest) => interviewsService.start(params),
     // The response is the full interview, so the session view renders from the cache without a GET.
-    onSuccess: (interview) => queryClient.setQueryData(interviewKeys.detail(interview.session.id), interview),
+    onSuccess: (interview) => {
+      queryClient.setQueryData(interviewKeys.detail(interview.session.id), interview);
+      // Starting abandons the previous in-progress interview and adds a row: the history is out of date.
+      void queryClient.invalidateQueries({ queryKey: interviewKeys.lists() });
+    },
+  });
+}
+
+/** One history page (`/history`); the previous page stays on screen while the next one loads. */
+export function useInterviewHistoryQuery(params: InterviewListParams) {
+  return useQuery({
+    queryKey: interviewKeys.list(params),
+    queryFn: () => interviewsService.list(params),
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -134,6 +148,11 @@ export function useAnswerInterviewMutation(id: string, { onEvent }: AnswerStream
     onMutate: cancelFetches,
     // The backend has moved on, so the cache does too, without a GET.
     onSuccess: async (outcome, request) => {
+      if (outcome.kind === "cancelled") {
+        return;
+      }
+      // Answered (or recovered): the interview's progress, and maybe its status, changed in the history.
+      void queryClient.invalidateQueries({ queryKey: interviewKeys.lists() });
       if (outcome.kind !== "answered") {
         return;
       }

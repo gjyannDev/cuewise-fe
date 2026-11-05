@@ -6,6 +6,7 @@ import { redirectIfSessionEnded } from "@/lib/config/session-redirect";
 import { START_TIMEOUT_MS, TRANSCRIBE_TIMEOUT_MS } from "../constants";
 import {
   answerRequestSchema,
+  interviewListSchema,
   interviewSchema,
   transcriptionResponseSchema,
   transcriptSchema,
@@ -14,6 +15,8 @@ import type {
   AnswerRequest,
   AnswerStreamEvent,
   Interview,
+  InterviewList,
+  InterviewListParams,
   StartInterviewRequest,
   Transcript,
   Transcription,
@@ -50,6 +53,12 @@ class InterviewsService {
   async get(id: string): Promise<Interview> {
     const data = await apiClient.get<unknown>(`${this.basePath}/${encodeURIComponent(id)}`);
     return interviewSchema.parse(data);
+  }
+
+  /** One page of the user's own interviews, newest first (the history table). */
+  async list(params: InterviewListParams): Promise<InterviewList> {
+    const data = await apiClient.get<unknown>(this.basePath, { params });
+    return interviewListSchema.parse(data);
   }
 
   /**

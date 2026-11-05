@@ -5,12 +5,45 @@ import {
   answerFormSchema,
   answerRequestSchema,
   answerResponseSchema,
+  historyOrderParamSchema,
+  historySizeParamSchema,
+  historySortParamSchema,
+  interviewListSchema,
   interviewSchema,
   sessionParamSchema,
   startInterviewFormSchema,
   transcriptionResponseSchema,
   transcriptSchema,
 } from "@/modules/interviews/schemas/interviews.schema";
+import { interviewListItem } from "@tests/helpers/interviews";
+
+describe("history sort and size params", () => {
+  it.each([
+    ["10", 10],
+    ["20", 20],
+    ["50", 50],
+  ])("?size=%s is %i rows (R2)", (raw, size) => {
+    expect(historySizeParamSchema.parse(raw)).toBe(size);
+  });
+
+  it.each(["7", "0", "100", "abc", "", "020", "1e1"])("rejects ?size=%j (R2, E1)", (raw) => {
+    expect(historySizeParamSchema.safeParse(raw).success).toBe(false);
+  });
+
+  it.each(["created_at", "role", "level", "interview_type", "status"])("accepts ?sort=%s (R3)", (raw) => {
+    expect(historySortParamSchema.parse(raw)).toBe(raw);
+  });
+
+  it.each(["progress", "actions", "id", "Role", ""])("rejects ?sort=%j (R3, E1)", (raw) => {
+    expect(historySortParamSchema.safeParse(raw).success).toBe(false);
+  });
+
+  it("accepts asc and desc only (R4, E1)", () => {
+    expect(historyOrderParamSchema.parse("asc")).toBe("asc");
+    expect(historyOrderParamSchema.parse("desc")).toBe("desc");
+    expect(historyOrderParamSchema.safeParse("up").success).toBe(false);
+  });
+});
 
 const issuesFor = (result: { success: boolean; error?: { issues: { path: PropertyKey[] }[] } }) =>
   result.error?.issues.map((issue) => issue.path.join(".")) ?? [];
@@ -333,5 +366,43 @@ describe("transcriptionResponseSchema", () => {
 
   it("drops unknown keys", () => {
     expect(transcriptionResponseSchema.parse({ text: "ok", model: "nova-3" })).toEqual({ text: "ok" });
+  });
+});
+
+describe("interviewListSchema", () => {
+  const page = { items: [interviewListItem(), interviewListItem({ status: "abandoned" })], total: 12, limit: 10, offset: 0 };
+
+  it("accepts a page of GET /interviews (history AC2)", () => {
+    expect(interviewListSchema.parse(page)).toEqual(page);
+  });
+
+  it("accepts an empty page", () => {
+    expect(interviewListSchema.parse({ items: [], total: 0, limit: 10, offset: 0 }).items).toEqual([]);
+  });
+
+  it("rejects an unknown status rather than rendering it (history EC10)", () => {
+    const body = { ...page, items: [interviewListItem({ status: "paused" as never })] };
+
+    expect(issuesFor(interviewListSchema.safeParse(body))).toEqual(["items.0.status"]);
+  });
+
+  it.each(["total", "items"])("rejects a page without %s (history EC10)", (field) => {
+    const body = Object.fromEntries(Object.entries(page).filter(([key]) => key !== field));
+
+    expect(issuesFor(interviewListSchema.safeParse(body))).toEqual([field]);
+  });
+
+  it("rejects a row without answered_count", () => {
+    const row = Object.fromEntries(Object.entries(interviewListItem()).filter(([key]) => key !== "answered_count"));
+
+    expect(issuesFor(interviewListSchema.safeParse({ ...page, items: [row] }))).toEqual(["items.0.answered_count"]);
+  });
+
+  it("accepts the timestamps cuewise-be sends and rejects one that isn't a date (history EC10)", () => {
+    const at = (created_at: string) => interviewListSchema.safeParse({ ...page, items: [interviewListItem({ created_at })] });
+
+    expect(at("2026-11-04T18:39:33.167367Z").success).toBe(true);
+    expect(at("2026-11-04T18:39:33.167367+00:00").success).toBe(true);
+    expect(issuesFor(at("yesterday"))).toEqual(["items.0.created_at"]);
   });
 });
