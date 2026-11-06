@@ -2,6 +2,8 @@ import { z } from "zod";
 
 import {
   ANSWER_MAX_LENGTH,
+  FEEDBACK_CRITERIA,
+  FEEDBACK_STATUSES,
   HISTORY_PAGE_SIZES,
   HISTORY_SORT_COLUMNS,
   INTERVIEW_TYPES,
@@ -12,6 +14,8 @@ import {
   QUESTION_CATEGORIES,
   QUESTION_KINDS,
   ROLES,
+  SCORE_MAX,
+  SCORE_MIN,
   SESSION_STATUSES,
   SORT_DIRECTIONS,
   TRANSCRIPT_KINDS,
@@ -152,6 +156,39 @@ export const historyOrderParamSchema = z.enum(SORT_DIRECTIONS);
 
 /** POST /interviews/{id}/transcriptions: what the candidate said, for them to review. It is not saved as an answer. */
 export const transcriptionResponseSchema = z.object({ text: z.string() });
+
+const criterionSchema = z.enum(FEEDBACK_CRITERIA);
+
+/** One main question's result. `scores` holds exactly its category's four criteria (cuewise-be checks that). */
+export const feedbackQuestionSchema = z.object({
+  main_number: z.number().int(),
+  category: z.enum(QUESTION_CATEGORIES),
+  question: z.string(),
+  // Partial: an enum-keyed record would demand all eight criteria, and a question only has four.
+  scores: z.partialRecord(criterionSchema, z.number().int().min(SCORE_MIN).max(SCORE_MAX)),
+  note: z.string().nullable(),
+  // The quote is verified by cuewise-be: these exact words appear in the candidate's answers to this question.
+  evidence: z.array(z.object({ criterion: criterionSchema, quote: z.string(), reason: z.string() })),
+});
+
+/**
+ * GET and POST /interviews/{id}/feedback. Scores and text only once `generated`; `enough_evidence` false means there
+ * was too little to assess (no scores, the message is in `summary`). `generating` and `failed` rows are empty.
+ */
+export const feedbackSchema = z.object({
+  id: z.uuid(),
+  interview_id: z.uuid(),
+  status: z.enum(FEEDBACK_STATUSES),
+  enough_evidence: z.boolean().nullable(),
+  overall: z.number().min(SCORE_MIN).max(SCORE_MAX).nullable(),
+  summary: z.string().nullable(),
+  strengths: z.array(z.string()),
+  improvements: z.array(z.string()),
+  next_steps: z.array(z.string()),
+  questions: z.array(feedbackQuestionSchema),
+  rubric_version: z.string(),
+  created_at: z.iso.datetime({ offset: true }),
+});
 
 /**
  * One row of GET /interviews (the history table). No job description or interview content: the backend leaves them

@@ -5,14 +5,9 @@ import { useMemo } from "react";
 
 import { dataTableFeatures } from "@/shared/ui/data-table-features";
 
-import { interviewHistoryColumns } from "../components/interview-history-columns";
+import { interviewHistoryColumns } from "@/modules/interviews/components/history/interview-history-columns";
 import type { HistoryParams, InterviewListItem } from "../types/interviews.types";
-import {
-  applyPaginationChange,
-  applySortingChange,
-  toPaginationState,
-  toSortingState,
-} from "../utils/history-table-state";
+import { applyPaginationChange, applySortingChange, toPaginationState, toSortingState } from "../utils/history.utils";
 
 type InterviewHistoryTableOptions = {
   /** The page's rows straight from the query (never copied into state). */

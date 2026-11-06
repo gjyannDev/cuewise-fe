@@ -5,14 +5,14 @@ import { type ReactNode, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useWarnBeforeUnload } from "@/hooks/use-warn-before-unload";
-import { type AnswerComposerHandle, AnswerComposer } from "@/modules/interviews/components/AnswerComposer";
-import { InterviewChat } from "@/modules/interviews/components/InterviewChat";
-import { InterviewClosingCard } from "@/modules/interviews/components/InterviewClosingCard";
-import { InterviewMessageCard } from "@/modules/interviews/components/InterviewMessageCard";
-import { STALE_THREAD_MESSAGE, THREAD_ERROR_MESSAGE } from "@/modules/interviews/constants";
+import { AnswerComposer, type AnswerComposerHandle } from "@/modules/interviews/components/chat/AnswerComposer";
+import { InterviewChat } from "@/modules/interviews/components/chat/InterviewChat";
+import { InterviewClosingCard } from "@/modules/interviews/components/chat/InterviewClosingCard";
+import { InterviewMessageCard } from "@/modules/interviews/components/common/InterviewMessageCard";
+import { feedbackStartRoute, STALE_THREAD_MESSAGE, THREAD_ERROR_MESSAGE } from "@/modules/interviews/constants";
 import { useInterviewChat } from "@/modules/interviews/hooks/use-interview-chat";
 import type { Interview, TranscriptItem } from "@/modules/interviews/types/interviews.types";
-import { getInterviewStep } from "@/modules/interviews/utils/get-interview-step";
+import { getInterviewStep } from "@/modules/interviews/utils/interview.utils";
 
 type ActiveInterviewProps = {
   interview: Interview;
@@ -69,7 +69,14 @@ export function ActiveInterview({
     // Wins over a reply that lands after End interview.
     footer = <InterviewClosingCard variant="ended" autoFocus={isEnded} onStartNew={onStartNew} />;
   } else if (step.kind === "completed") {
-    footer = <InterviewClosingCard variant="completed" autoFocus={chat.hasSent} onStartNew={onStartNew} />;
+    footer = (
+      <InterviewClosingCard
+        variant="completed"
+        autoFocus={chat.hasSent}
+        feedbackHref={feedbackStartRoute(session.id)}
+        onStartNew={onStartNew}
+      />
+    );
   } else if (!openQuestion && !chat.isBusy) {
     // In progress, but the cached conversation has nothing left to answer: stale, so offer a refetch.
     footer = retryNotice(STALE_THREAD_MESSAGE);

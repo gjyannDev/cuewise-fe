@@ -5,11 +5,9 @@ import { useMutationCallbacks } from "@/hooks/use-mutation-callback";
 import { INTERVIEWER_SLOW_LABEL, RESYNC_MESSAGE, THINKING_SLOW_AFTER_MS, UNCONFIRMED_SEND_MESSAGE } from "../constants";
 import { useAnswerInterviewMutation, useTranscribeAnswerMutation } from "../queries/interviews.queries";
 import type { AnswerStreamEvent, TranscriptItem } from "../types/interviews.types";
-import { buildThreadView } from "../utils/build-thread-view";
-import { getAnswerErrorResult } from "../utils/get-answer-error-result";
-import { getTranscribeErrorResult } from "../utils/get-transcribe-error-result";
-import { pickThinkingLabel } from "../utils/pick-thinking-label";
-import { ANSWER_STREAM_START, type AnswerStreamState, reduceAnswerStream } from "../utils/reduce-answer-stream";
+import { buildThreadView, getAnswerErrorResult, pickThinkingLabel } from "../utils/chat.utils";
+import { ANSWER_STREAM_START, type AnswerStreamState, reduceAnswerStream } from "../utils/stream.utils";
+import { getTranscribeErrorResult } from "../utils/voice.utils";
 
 /** A failed send: the composer puts the text back, with `message` under the field when the backend rejected it. */
 export type SendFailure = { message?: string };

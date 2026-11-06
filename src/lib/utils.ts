@@ -10,3 +10,11 @@ const RECORDING_FORMATS = ["audio/webm;codecs=opus", "audio/mp4", "audio/ogg;cod
 export function pickRecordingFormat(isTypeSupported: (type: string) => boolean): string | null {
   return RECORDING_FORMATS.find((type) => isTypeSupported(type)) ?? null
 }
+
+/**
+ * Ref callback that focuses an element once, when it mounts. Module-level so its identity is stable: an inline
+ * arrow would be called again on every render and keep stealing focus.
+ */
+export function focusOnMount(node: HTMLElement | null) {
+  node?.focus();
+}

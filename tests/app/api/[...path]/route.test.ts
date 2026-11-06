@@ -139,6 +139,8 @@ describe("/api/[...path] forwarder", () => {
     ["POST", ["interviews", "0b7c2f4e-5d1a-4c3b-9e8f-1a2b3c4d5e6f", "messages"], 45_000],
     ["POST", ["interviews"], 60_000],
     ["POST", ["interviews", "0b7c2f4e-5d1a-4c3b-9e8f-1a2b3c4d5e6f", "transcriptions"], 25_000],
+    ["POST", ["interviews", "0b7c2f4e-5d1a-4c3b-9e8f-1a2b3c4d5e6f", "feedback"], 70_000],
+    ["GET", ["interviews", "0b7c2f4e-5d1a-4c3b-9e8f-1a2b3c4d5e6f", "feedback"], 15_000],
     ["GET", ["interviews", "0b7c2f4e-5d1a-4c3b-9e8f-1a2b3c4d5e6f", "messages"], 15_000],
     ["GET", ["interviews"], 15_000],
     ["POST", ["users"], 15_000],

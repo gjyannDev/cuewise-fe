@@ -3,11 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { apiClient } from "@/lib/api/api.client";
 import { ApiResponseError, NoResponseError } from "@/lib/config/api.helper";
 import { redirectIfSessionEnded } from "@/lib/config/session-redirect";
-import { START_TIMEOUT_MS, TRANSCRIBE_TIMEOUT_MS } from "@/modules/interviews/constants";
+import { FEEDBACK_TIMEOUT_MS, START_TIMEOUT_MS, TRANSCRIBE_TIMEOUT_MS } from "@/modules/interviews/constants";
 import { interviewsService } from "@/modules/interviews/services/interviews.services";
-import { AnswerStreamError } from "@/modules/interviews/utils/answer-stream-error";
+import { AnswerStreamError } from "@/modules/interviews/utils/stream.utils";
 import { axiosErrorWith, errorBody } from "@tests/helpers/axios";
-import { interviewListItem } from "@tests/helpers/interviews";
+import { feedback, interviewListItem } from "@tests/helpers/interviews";
 import { sseFrame, streamOf } from "@tests/helpers/sse";
 
 // apiClient already unwraps `res.data`, so the mocks resolve with the payload itself.
@@ -286,6 +286,44 @@ describe("interviewsService", () => {
       post.mockRejectedValue(error);
 
       await expect(interviewsService.transcribe(ID, recording("audio/webm"))).rejects.toBe(error);
+    });
+  });
+
+  describe("feedback", () => {
+    it("getFeedback reads the stored feedback and parses it (AC2)", async () => {
+      get.mockResolvedValue(feedback());
+
+      await expect(interviewsService.getFeedback(ID)).resolves.toEqual(feedback());
+      expect(get).toHaveBeenCalledWith(`/interviews/${ID}/feedback`);
+    });
+
+    it("getFeedback returns null when none was requested yet (AC3, EC4)", async () => {
+      get.mockRejectedValue(axiosErrorWith(404, errorBody("FEEDBACK_NOT_FOUND", "No feedback")));
+
+      await expect(interviewsService.getFeedback(ID)).resolves.toBeNull();
+    });
+
+    it("getFeedback lets a 404 for the interview itself through (EC2)", async () => {
+      const notFound = axiosErrorWith(404, errorBody("NOT_FOUND", "Interview not found"));
+      get.mockRejectedValue(notFound);
+
+      await expect(interviewsService.getFeedback(ID)).rejects.toBe(notFound);
+    });
+
+    it("generateFeedback posts with the feedback timeout and parses the result (AC6)", async () => {
+      post.mockResolvedValue(feedback());
+
+      await expect(interviewsService.generateFeedback(ID)).resolves.toEqual(feedback());
+      expect(post).toHaveBeenCalledWith(`/interviews/${ID}/feedback`, undefined, { timeout: FEEDBACK_TIMEOUT_MS });
+    });
+
+    it.each([
+      ["getFeedback", () => get, () => interviewsService.getFeedback(ID)],
+      ["generateFeedback", () => post, () => interviewsService.generateFeedback(ID)],
+    ] as const)("%s rejects a body that breaks the contract (AC11, EC20)", async (_name, mock, call) => {
+      mock().mockResolvedValue(feedback({ status: "queued" as never }));
+
+      await expect(call()).rejects.toThrow();
     });
   });
 });

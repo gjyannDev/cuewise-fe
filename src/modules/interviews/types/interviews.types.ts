@@ -1,11 +1,13 @@
 import type { z } from "zod";
 
-import type { HISTORY_SORT_COLUMNS, SESSION_STATUSES, SORT_DIRECTIONS } from "../constants";
+import type { FEEDBACK_CRITERIA, HISTORY_SORT_COLUMNS, SESSION_STATUSES, SORT_DIRECTIONS } from "../constants";
 import type {
   answerFormSchema,
   answerStreamEventSchemas,
   answerRequestSchema,
   answerResponseSchema,
+  feedbackQuestionSchema,
+  feedbackSchema,
   interviewListItemSchema,
   interviewListSchema,
   interviewSchema,
@@ -91,6 +93,47 @@ export type InterviewListItem = z.infer<typeof interviewListItemSchema>;
 export type InterviewList = z.infer<typeof interviewListSchema>;
 export type HistorySortColumn = (typeof HISTORY_SORT_COLUMNS)[number];
 export type SortDirection = (typeof SORT_DIRECTIONS)[number];
+
+export type Criterion = (typeof FEEDBACK_CRITERIA)[number];
+export type Feedback = z.infer<typeof feedbackSchema>;
+export type FeedbackQuestion = z.infer<typeof feedbackQuestionSchema>;
+export type FeedbackEvidence = FeedbackQuestion["evidence"][number];
+
+/**
+ * A failed feedback request, sorted by what the page does next. `poll`: no response or already generating, so read the
+ * stored row (it may have finished). `rateLimited` only toasts. The rest pick a screen.
+ */
+export type FeedbackErrorResult = {
+  kind: "poll" | "notCompleted" | "notFound" | "failed" | "unavailable" | "rateLimited" | "unknown";
+};
+
+/** Which screen the feedback page shows. */
+export type FeedbackView =
+  | { kind: "loading" }
+  | { kind: "none" }
+  | { kind: "generating" }
+  | { kind: "stalled" }
+  | { kind: "generated"; feedback: Feedback }
+  | { kind: "insufficient"; message: string | null }
+  | { kind: "failed" }
+  | { kind: "unavailable" }
+  | { kind: "notCompleted" }
+  | { kind: "notFound" }
+  | { kind: "unknown" };
+
+/** What `getFeedbackView` decides from. `stored`: undefined while loading, null when none is stored yet. */
+export type FeedbackViewInput = {
+  stored: Feedback | null | undefined;
+  /** The read failed (only used while nothing is cached). */
+  queryError?: FeedbackErrorResult;
+  /** The last POST failed (cleared when a new one starts). */
+  generateError?: FeedbackErrorResult;
+  isGenerating: boolean;
+  /** The closing card asked to generate and the request is about to start. */
+  startRequested: boolean;
+  /** A stored `generating` row has been polled for longer than the backend's takeover window. */
+  isStalled: boolean;
+};
 
 /**
  * `/history`'s URL state after validation, defaults filled in: a 1-based page, rows per page, the sort column and

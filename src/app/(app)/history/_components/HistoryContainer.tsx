@@ -7,9 +7,9 @@ import { useTransition } from "react";
 
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { InterviewHistorySkeleton } from "@/modules/interviews/components/InterviewHistorySkeleton";
-import { InterviewHistoryStatusFilter } from "@/modules/interviews/components/InterviewHistoryStatusFilter";
-import { InterviewMessageCard } from "@/modules/interviews/components/InterviewMessageCard";
+import { InterviewHistorySkeleton } from "@/modules/interviews/components/history/InterviewHistorySkeleton";
+import { InterviewHistoryStatusFilter } from "@/modules/interviews/components/history/InterviewHistoryStatusFilter";
+import { InterviewMessageCard } from "@/modules/interviews/components/common/InterviewMessageCard";
 import {
   HISTORY_EMPTY_DESCRIPTION,
   HISTORY_EMPTY_TITLE,
@@ -27,8 +27,8 @@ import {
 import { useInterviewHistoryTable } from "@/modules/interviews/hooks/use-interview-history-table";
 import { useInterviewHistoryQuery } from "@/modules/interviews/queries/interviews.queries";
 import type { HistoryParams, InterviewListItem } from "@/modules/interviews/types/interviews.types";
-import { formatInterviewCount } from "@/modules/interviews/utils/format-question-count";
-import { buildHistoryHref, toHistoryListParams } from "@/modules/interviews/utils/history-params";
+import { formatInterviewCount } from "@/modules/interviews/utils/format.utils";
+import { buildHistoryHref, toHistoryListParams } from "@/modules/interviews/utils/history.utils";
 import { DataTable } from "@/shared/ui/DataTable";
 import { DataTablePagination } from "@/shared/ui/DataTablePagination";
 

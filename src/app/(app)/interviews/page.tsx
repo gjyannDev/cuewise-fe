@@ -2,7 +2,7 @@ import { Suspense } from "react";
 
 import { requireUser } from "@/modules/auth/session/current-user.server";
 import { INTERVIEWS_ROUTE } from "@/modules/interviews/constants";
-import { parseSessionParam } from "@/modules/interviews/utils/parse-session-param";
+import { parseSessionParam } from "@/modules/interviews/utils/interview.utils";
 
 import { InterviewsContainer } from "./_components/InterviewsContainer";
 

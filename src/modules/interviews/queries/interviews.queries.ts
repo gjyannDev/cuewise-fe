@@ -1,21 +1,22 @@
 import { keepPreviousData, skipToken, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 
-import { ANSWER_TIMEOUT_MS } from "../constants";
+import { ANSWER_TIMEOUT_MS, FEEDBACK_POLL_MS } from "../constants";
 import { interviewsService } from "../services/interviews.services";
 import type {
   AnswerOutcome,
   AnswerRequest,
   AnswerStreamEvent,
+  Feedback,
   Interview,
   InterviewListParams,
   StartInterviewRequest,
   Transcript,
 } from "../types/interviews.types";
-import { AnswerStreamError } from "../utils/answer-stream-error";
-import { appendAnswerTurn } from "../utils/append-answer-turn";
-import { getAnswerErrorResult } from "../utils/get-answer-error-result";
-import { getTranscribeErrorResult } from "../utils/get-transcribe-error-result";
+import { appendAnswerTurn, getAnswerErrorResult } from "../utils/chat.utils";
+import { FeedbackLostError, getFeedbackErrorResult } from "../utils/feedback.utils";
+import { AnswerStreamError } from "../utils/stream.utils";
+import { getTranscribeErrorResult } from "../utils/voice.utils";
 import { interviewKeys } from "./interviews.keys";
 
 export function useStartInterviewMutation() {
@@ -195,6 +196,55 @@ export function useTranscribeAnswerMutation(id: string) {
       if (!signal.aborted && getTranscribeErrorResult(error).kind === "resync") {
         return queryClient.invalidateQueries({ queryKey: interviewKeys.detail(id) });
       }
+    },
+  });
+}
+
+/**
+ * The interview's stored feedback (null: none requested yet). A `generating` row is read again every few seconds until
+ * it is generated or failed; nothing polls otherwise, and polling stops when the page goes away.
+ */
+export function useFeedbackQuery(id: string) {
+  return useQuery({
+    queryKey: interviewKeys.feedback(id),
+    queryFn: () => interviewsService.getFeedback(id),
+    refetchInterval: (query) => (query.state.data?.status === "generating" ? FEEDBACK_POLL_MS : false),
+  });
+}
+
+/**
+ * Generates the feedback, or returns the one already stored. cuewise-be finishes and stores it even when this request
+ * gets no reply, or when another request is already generating (409): then the stored row is read instead, and the
+ * page polls it if it is still `generating`. Nothing stored after a lost reply is `FeedbackLostError`.
+ */
+export function useGenerateFeedbackMutation(id: string) {
+  const queryClient = useQueryClient();
+  const readStored = () =>
+    queryClient.fetchQuery({
+      queryKey: interviewKeys.feedback(id),
+      queryFn: () => interviewsService.getFeedback(id),
+      staleTime: 0,
+      retry: false,
+    });
+
+  return useMutation({
+    mutationKey: interviewKeys.generateFeedback(id),
+    mutationFn: async (): Promise<Feedback> => {
+      try {
+        return await interviewsService.generateFeedback(id);
+      } catch (error) {
+        if (getFeedbackErrorResult(error).kind !== "poll") {
+          throw error;
+        }
+        const stored = await readStored();
+        if (stored === null) {
+          throw new FeedbackLostError();
+        }
+        return stored;
+      }
+    },
+    onSuccess: (feedback) => {
+      queryClient.setQueryData<Feedback | null>(interviewKeys.feedback(id), feedback);
     },
   });
 }

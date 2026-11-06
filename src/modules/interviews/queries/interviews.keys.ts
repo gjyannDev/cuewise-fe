@@ -11,4 +11,7 @@ export const interviewKeys = {
   messages: (id: string) => [...interviewKeys.detail(id), "messages"] as const,
   answer: (id: string) => [...interviewKeys.detail(id), "answer"] as const,
   transcribe: (id: string) => [...interviewKeys.detail(id), "transcribe"] as const,
+  // Under detail(id): the end-of-interview feedback belongs to the interview.
+  feedback: (id: string) => [...interviewKeys.detail(id), "feedback"] as const,
+  generateFeedback: (id: string) => [...interviewKeys.feedback(id), "generate"] as const,
 };

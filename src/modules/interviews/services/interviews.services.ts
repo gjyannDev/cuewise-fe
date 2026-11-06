@@ -1,11 +1,12 @@
 import { apiClient } from "@/lib/api/api.client";
 import { readSseStream } from "@/lib/api/sse";
-import { ApiResponseError, NoResponseError } from "@/lib/config/api.helper";
+import { ApiResponseError, NoResponseError, parseApiError } from "@/lib/config/api.helper";
 import { redirectIfSessionEnded } from "@/lib/config/session-redirect";
 
-import { START_TIMEOUT_MS, TRANSCRIBE_TIMEOUT_MS } from "../constants";
+import { FEEDBACK_ERROR_CODES, FEEDBACK_TIMEOUT_MS, START_TIMEOUT_MS, TRANSCRIBE_TIMEOUT_MS } from "../constants";
 import {
   answerRequestSchema,
+  feedbackSchema,
   interviewListSchema,
   interviewSchema,
   transcriptionResponseSchema,
@@ -14,6 +15,7 @@ import {
 import type {
   AnswerRequest,
   AnswerStreamEvent,
+  Feedback,
   Interview,
   InterviewList,
   InterviewListParams,
@@ -21,8 +23,7 @@ import type {
   Transcript,
   Transcription,
 } from "../types/interviews.types";
-import { AnswerStreamError } from "../utils/answer-stream-error";
-import { parseAnswerStreamEvent } from "../utils/parse-answer-stream-event";
+import { AnswerStreamError, parseAnswerStreamEvent } from "../utils/stream.utils";
 
 const TERMINAL_EVENTS = new Set<AnswerStreamEvent["event"]>(["done", "error"]);
 
@@ -123,6 +124,33 @@ class InterviewsService {
       signal,
     });
     return transcriptionResponseSchema.parse(data);
+  }
+
+  /**
+   * The interview's stored feedback in any status, or null when none was requested yet (`FEEDBACK_NOT_FOUND`). Any
+   * other error, a 404 for the interview itself included, is thrown as is.
+   */
+  async getFeedback(id: string): Promise<Feedback | null> {
+    try {
+      const data = await apiClient.get<unknown>(`${this.basePath}/${encodeURIComponent(id)}/feedback`);
+      return feedbackSchema.parse(data);
+    } catch (error) {
+      if (parseApiError(error).code === FEEDBACK_ERROR_CODES.notFound) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Scores the completed interview, or returns the feedback already stored. cuewise-be answers once both LLM calls are
+   * done, so this waits far longer than other requests.
+   */
+  async generateFeedback(id: string): Promise<Feedback> {
+    const data = await apiClient.post<unknown>(`${this.basePath}/${encodeURIComponent(id)}/feedback`, undefined, {
+      timeout: FEEDBACK_TIMEOUT_MS,
+    });
+    return feedbackSchema.parse(data);
   }
 }
 

@@ -1,9 +1,9 @@
 import { Suspense } from "react";
 
 import { requireUser } from "@/modules/auth/session/current-user.server";
-import { InterviewHistorySkeleton } from "@/modules/interviews/components/InterviewHistorySkeleton";
+import { InterviewHistorySkeleton } from "@/modules/interviews/components/history/InterviewHistorySkeleton";
 import { HISTORY_ROUTE } from "@/modules/interviews/constants";
-import { parseHistoryParams } from "@/modules/interviews/utils/history-params";
+import { parseHistoryParams } from "@/modules/interviews/utils/history.utils";
 
 import { HistoryContainer } from "./_components/HistoryContainer";
 

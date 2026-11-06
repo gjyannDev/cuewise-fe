@@ -1,5 +1,7 @@
 import type {
   AnswerResponse,
+  Feedback,
+  FeedbackQuestion,
   InterviewListItem,
   InterviewQuestion,
   Reaction,
@@ -81,4 +83,65 @@ export function interviewListItem(overrides: Partial<InterviewListItem> = {}): I
     created_at: "2026-11-04T09:30:00Z",
     ...overrides,
   };
+}
+
+export const FEEDBACK_ID = "019a3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d";
+
+/** A behavioral main question of a generated feedback, with one verified quote. */
+export function feedbackQuestion(overrides: Partial<FeedbackQuestion> = {}): FeedbackQuestion {
+  return {
+    main_number: 1,
+    category: "behavioral",
+    question: "Tell me about a time you disagreed with a teammate.",
+    scores: { structure: 4, specificity: 3, ownership: 4, outcome: 3 },
+    note: "Clear story; name the result you measured.",
+    evidence: [{ criterion: "ownership", quote: "I set up the meeting myself", reason: "Takes the first step." }],
+    ...overrides,
+  };
+}
+
+/**
+ * GET/POST /interviews/{id}/feedback: a generated feedback with scores (one behavioral and one technical question)
+ * unless overridden.
+ */
+export function feedback(overrides: Partial<Feedback> = {}): Feedback {
+  return {
+    id: FEEDBACK_ID,
+    interview_id: SESSION_ID,
+    status: "generated",
+    enough_evidence: true,
+    overall: 3.6,
+    summary: "You gave concrete examples; trade-offs need more detail.",
+    strengths: ["Specific examples", "Clear structure"],
+    improvements: ["Name the trade-offs", "State the outcome"],
+    next_steps: ["Practise one system design question."],
+    questions: [
+      feedbackQuestion(),
+      feedbackQuestion({
+        main_number: 2,
+        category: "technical",
+        question: "How would you add a cache to a read-heavy API?",
+        scores: { correctness: 4, depth: 3, trade_offs: 3, clarity: 4 },
+        note: null,
+        evidence: [],
+      }),
+    ],
+    rubric_version: "feedback_rubric_v1",
+    created_at: "2026-11-06T09:00:00Z",
+    ...overrides,
+  };
+}
+
+/** A row with no result to show: `generating` (a request holds it) or `failed` (POST again). */
+export function emptyFeedback(status: "generating" | "failed"): Feedback {
+  return feedback({
+    status,
+    enough_evidence: null,
+    overall: null,
+    summary: null,
+    strengths: [],
+    improvements: [],
+    next_steps: [],
+    questions: [],
+  });
 }

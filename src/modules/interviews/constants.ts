@@ -180,3 +180,121 @@ export const HISTORY_PAST_END_DESCRIPTION = "This page is past the end of your i
 export const HISTORY_ERROR_TITLE = "We couldn't load your interviews";
 export const HISTORY_ERROR_DESCRIPTION = "Check your connection and try again.";
 export const HISTORY_REFRESH_ERROR = "Couldn't load this page. Showing the last one loaded.";
+
+// --- Feedback (/interviews/[id]/feedback): cuewise-be's end-of-interview scores, from GET/POST .../feedback ---
+
+/**
+ * Mirrors cuewise-be `Criterion`, `CATEGORY_CRITERIA` and `CRITERION_LABELS` (interviews_constants.py); keep in step.
+ * An unknown criterion makes the whole response invalid, so a new rubric criterion needs this list updated first.
+ */
+export const FEEDBACK_CRITERIA = [
+  "structure",
+  "specificity",
+  "ownership",
+  "outcome",
+  "correctness",
+  "depth",
+  "trade_offs",
+  "clarity",
+] as const;
+
+export const CRITERION_LABELS: Record<(typeof FEEDBACK_CRITERIA)[number], string> = {
+  structure: "Structure",
+  specificity: "Specific detail",
+  ownership: "Your own role",
+  outcome: "Outcome",
+  correctness: "Correctness",
+  depth: "Depth",
+  trade_offs: "Trade-offs",
+  clarity: "Clarity",
+};
+
+export const QUESTION_CATEGORY_LABELS: Record<(typeof QUESTION_CATEGORIES)[number], string> = {
+  technical: "Technical",
+  behavioral: "Behavioral",
+};
+
+/** A feedback row's life (cuewise-be `FeedbackStatus`): `generated` is final, `failed` can be posted again. */
+export const FEEDBACK_STATUSES = ["generating", "generated", "failed"] as const;
+
+export const SCORE_MIN = 1;
+export const SCORE_MAX = 5;
+
+/** cuewise-be's feedback error codes; everything else about an error is treated generically. */
+export const FEEDBACK_ERROR_CODES = {
+  notFound: "FEEDBACK_NOT_FOUND",
+  inProgress: "FEEDBACK_IN_PROGRESS",
+  notCompleted: "INTERVIEW_NOT_COMPLETED",
+  failed: "FEEDBACK_FAILED",
+  unavailable: "FEEDBACK_UNAVAILABLE",
+} as const;
+
+export const feedbackRoute = (id: string) => `${INTERVIEWS_ROUTE}/${encodeURIComponent(id)}/feedback`;
+/** `?start=1`: the closing card's one-shot request to generate on arrival. The page removes it once read. */
+export const FEEDBACK_START_PARAM = "start";
+export const FEEDBACK_START_VALUE = "1";
+/** Where the closing card's Get feedback goes: the page, told to generate on arrival. */
+export const feedbackStartRoute = (id: string) => `${feedbackRoute(id)}?${FEEDBACK_START_PARAM}=${FEEDBACK_START_VALUE}`;
+
+/**
+ * Generating waits on two LLM calls: cuewise-be gives them 60s (feedback_total_budget_seconds). The forwarder waits a
+ * bit longer, and the browser longer still, so a slow request ends with the forwarder's clean 503, which the page then
+ * recovers from by reading the stored feedback.
+ */
+export const FEEDBACK_FORWARD_TIMEOUT_MS = 70_000;
+export const FEEDBACK_TIMEOUT_MS = 75_000;
+/** How often a `generating` row is read again. */
+export const FEEDBACK_POLL_MS = 3000;
+/** cuewise-be takes a `generating` row over after its budget plus a 30s margin: past that, offer a new try. */
+export const FEEDBACK_STALL_MS = 90_000;
+export const FEEDBACK_SLOW_AFTER_MS = 15_000;
+
+export const FEEDBACK_PAGE_TITLE = "Your feedback";
+export const FEEDBACK_SECTIONS = {
+  overall: "Overall score",
+  strengths: "What went well",
+  improvements: "What to work on",
+  nextSteps: "Next steps",
+  answers: "Your answers",
+} as const;
+export const FEEDBACK_DISCLAIMER = "Scores are an AI estimate to help you practise, not an official grade.";
+export const FEEDBACK_GENERATING_LABEL = "Reading your answers…";
+export const FEEDBACK_SLOW_LABEL = "Still working on it…";
+/**
+ * Relies on cuewise-be finishing a generation after the browser leaves (plan Step 0a). If the manual check fails,
+ * set this to null and the line disappears.
+ */
+export const FEEDBACK_LEAVE_HINT: string | null =
+  "You can leave this page. Your feedback will keep generating and will be under History > View.";
+export const FEEDBACK_READY_ANNOUNCEMENT = "Your feedback is ready.";
+
+/** Copy for every screen that isn't the result itself (spec UX Requirements). */
+export const FEEDBACK_MESSAGES = {
+  none: {
+    title: "Get feedback on this interview",
+    description: "See a score for each answer, the words that earned it, and what to practise next. It takes up to a minute.",
+  },
+  insufficient: {
+    title: "Not enough answers to assess",
+    description: "Answer at least half of the questions in a few sentences each, then try another practice interview.",
+  },
+  failed: {
+    title: "We couldn't generate your feedback",
+    description: "Something went wrong while scoring your answers. Your interview is saved, so you can try again.",
+  },
+  stalled: {
+    title: "This is taking longer than expected",
+    description: "Your feedback hasn't finished yet. Try again to restart it.",
+  },
+  unavailable: { title: "Feedback isn't available right now", description: "Try again later." },
+  notCompleted: {
+    title: "This interview isn't finished yet",
+    description: "Feedback is ready once you've answered every question.",
+  },
+  unknown: { title: "We couldn't load your feedback", description: "Check your connection and try again." },
+} as const;
+export const FEEDBACK_RATE_LIMIT_MESSAGE = "Too many requests. Wait a moment and try again.";
+
+export const INTERVIEW_NOT_FOUND_TITLE = "Interview not found";
+export const INTERVIEW_NOT_FOUND_DESCRIPTION =
+  "This link doesn't match an interview on your account. It may be mistyped or belong to someone else.";

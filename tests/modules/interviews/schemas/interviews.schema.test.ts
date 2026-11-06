@@ -5,6 +5,7 @@ import {
   answerFormSchema,
   answerRequestSchema,
   answerResponseSchema,
+  feedbackSchema,
   historyOrderParamSchema,
   historySizeParamSchema,
   historySortParamSchema,
@@ -15,7 +16,7 @@ import {
   transcriptionResponseSchema,
   transcriptSchema,
 } from "@/modules/interviews/schemas/interviews.schema";
-import { interviewListItem } from "@tests/helpers/interviews";
+import { emptyFeedback, feedback, feedbackQuestion, interviewListItem } from "@tests/helpers/interviews";
 
 describe("history sort and size params", () => {
   it.each([
@@ -404,5 +405,51 @@ describe("interviewListSchema", () => {
     expect(at("2026-11-04T18:39:33.167367Z").success).toBe(true);
     expect(at("2026-11-04T18:39:33.167367+00:00").success).toBe(true);
     expect(issuesFor(at("yesterday"))).toEqual(["items.0.created_at"]);
+  });
+});
+
+describe("feedbackSchema (GET and POST /interviews/{id}/feedback)", () => {
+  const withQuestion = (overrides: Parameters<typeof feedbackQuestion>[0]) =>
+    feedback({ questions: [feedbackQuestion(overrides)] });
+
+  it("parses a generated feedback with scores, notes and evidence (AC4, AC5)", () => {
+    expect(feedbackSchema.parse(feedback())).toEqual(feedback());
+  });
+
+  it("parses the not-enough-answers result: no overall, no questions (EC19)", () => {
+    const insufficient = feedback({ enough_evidence: false, overall: null, questions: [], strengths: [], improvements: [], next_steps: [] });
+
+    expect(feedbackSchema.safeParse(insufficient).success).toBe(true);
+  });
+
+  it.each(["generating", "failed"] as const)("parses a %s row with nothing in it yet", (status) => {
+    expect(feedbackSchema.safeParse(emptyFeedback(status)).success).toBe(true);
+  });
+
+  it("accepts a question that only has its own category's four criteria (EC23)", () => {
+    const technical = withQuestion({ category: "technical", scores: { correctness: 5, depth: 1, trade_offs: 2, clarity: 3 } });
+
+    expect(feedbackSchema.safeParse(technical).success).toBe(true);
+  });
+
+  it("accepts a question with no note and no evidence (EC21, EC22)", () => {
+    expect(feedbackSchema.safeParse(withQuestion({ note: null, evidence: [] })).success).toBe(true);
+  });
+
+  it("rejects an unknown criterion in the scores or the evidence (EC20)", () => {
+    const inScores = withQuestion({ scores: { structure: 3, charisma: 4 } as never });
+    const inEvidence = withQuestion({ evidence: [{ criterion: "charisma" as never, quote: "I set up the meeting myself", reason: "x" }] });
+
+    expect(feedbackSchema.safeParse(inScores).success).toBe(false);
+    expect(feedbackSchema.safeParse(inEvidence).success).toBe(false);
+  });
+
+  it.each([0, 6, 3.5])("rejects the score %s (EC20)", (score) => {
+    expect(feedbackSchema.safeParse(withQuestion({ scores: { structure: score } })).success).toBe(false);
+  });
+
+  it("rejects an unknown status or category (EC20)", () => {
+    expect(feedbackSchema.safeParse(feedback({ status: "queued" as never })).success).toBe(false);
+    expect(feedbackSchema.safeParse(withQuestion({ category: "design" as never })).success).toBe(false);
   });
 });
