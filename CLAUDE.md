@@ -53,8 +53,10 @@ src/
       schemas/<feature>.schema.ts      # zod schemas (forms, requests, responses)
       types/<feature>.types.ts         # types, inferred via z.infer where possible
       stores/<feature>.store.ts        # zustand, client-only UI state (never server data)
-      components/                      # feature components (dumb + container)
-      hooks/ / utils/ / constants.ts   # feature-local helpers, as needed
+      components/<area>/               # feature components, always in an area folder (never flat): e.g. interviews/components/{chat,setup,history,feedback,common}/
+      hooks/use-<thing>.ts             # feature hooks, one hook per file
+      utils/<area>.utils.ts            # pure helpers grouped by area (feedback.utils.ts, history.utils.ts, ...), never one file per function
+      constants.ts                     # feature constants and copy
 tests/                         # all tests, mirroring src/ (e.g. tests/modules/auth/...); helpers in tests/helpers/
 ```
 
@@ -70,10 +72,17 @@ Layer rules:
 ## Components
 - **Keep components dumb (presentational).** They receive data and callbacks via props and render. No data fetching, no service calls, no business logic.
 - When something needs data, split it: a small **container** (or the page) calls the query hooks and passes results down to presentational components.
-- Move non-trivial logic out of JSX: derived values into `utils/` (pure functions), stateful logic into a custom hook (`use-<thing>.ts`).
+- Move non-trivial logic out of JSX: derived values into the area's `utils/<area>.utils.ts` (pure functions), stateful logic into a custom hook (`use-<thing>.ts`).
 - **Reuse before creating.** Check `src/components/ui/`, `src/shared/` and the feature's `components/` first. If you write the same UI twice, extract it to `shared/`.
 - Default to **Server Components**; add `"use client"` only where interactivity, hooks or browser APIs are needed, and push it as far down the tree as possible.
-- One component per file, `PascalCase.tsx`, named export. Props typed with a `type <Name>Props`.
+- **Folders by area.** A feature's components live in `components/<area>/` (the screen or part of the app they belong to: `chat/`, `setup/`, `history/`, `feedback/`, ...). Pieces used by several areas go in `components/common/`; pieces used by several features go in `src/shared/`. Never add a component directly under `components/`.
+- **One exported component per file.** `PascalCase.tsx`, named export, props typed with a `type <Name>Props`.
+- **Don't split by default; a new component has to earn its file.** Write the screen piece as one component first. Create a new component file only if at least one of these is true:
+  1. **Reused:** two or more files import it.
+  2. **A real boundary:** a `"use client"` split that keeps the parent a Server Component, a hook that must run inside a provider the parent renders (e.g. `useStickToBottomContext` inside `Conversation`), or a `key` reset.
+  3. **Big on its own:** it has its own state or effects *and* is large enough (roughly 80+ lines) that keeping it inline would make the parent hard to read.
+- **Otherwise keep it in the parent.** Leave the JSX inline; for a block repeated inside one file use `.map` or a non-exported function in that same file. Before adding a component at all, check for a smaller fix: a shadcn variant or `className`, a constants map (e.g. status → badge variant), a util, or a `.map`.
+- **Never create** a file that only renders one primitive with fixed props (a `Badge` with a variant map), a layout-only wrapper (a grid with two slots), a component that only passes props through, or a component made just to give some JSX a name. Small files are a smell here, not a goal.
 - Style with Tailwind classes only; merge classes with `cn()` from `@/lib/utils`. Use theme tokens (`text-muted-foreground`, `bg-card`, ...), not hardcoded colors.
 - Always handle **loading, empty and error** states for data-driven UI.
 
@@ -104,7 +113,7 @@ Layer rules:
 - `strict` TS. No `any` (use `unknown` + narrowing); no non-null `!` unless justified. Prefer `type` over `interface` unless extending.
 - Infer types from zod schemas (`z.infer`) instead of duplicating them.
 - Imports via the `@/` alias, not deep relative paths (`../../..`).
-- File naming: components `PascalCase.tsx`; hooks `use-kebab-case.ts`; others `kebab-case` or `<feature>.<kind>.ts` (`auth.services.ts`, `auth.queries.ts`, `auth.schema.ts`).
+- File naming: components `PascalCase.tsx`; hooks `use-kebab-case.ts`; utils `<area>.utils.ts` (one file per area, e.g. `feedback.utils.ts`; never `get-something.ts` per function); others `kebab-case` or `<feature>.<kind>.ts` (`auth.services.ts`, `auth.queries.ts`, `auth.schema.ts`).
 - **DRY** and **separation of concerns**: one responsibility per file/function. Match surrounding style, naming and comment density. No speculative abstractions (YAGNI).
 - Accessibility: semantic HTML, labels linked to inputs (`htmlFor`/`id`), keyboard-usable controls, `aria-*` where Radix doesn't cover it, visible focus states.
 - Performance: avoid unnecessary client components and effects; derive state instead of syncing it with `useEffect`; use `next/image` and `next/font` (`src/lib/font.ts`).
@@ -120,6 +129,7 @@ Layer rules:
   - `src/modules/auth/schemas/auth.schema.ts` → `tests/modules/auth/schemas/auth.schema.test.ts`
   - `src/app/api/auth/session-expired/route.ts` → `tests/app/api/auth/session-expired/route.test.ts`
   - `src/proxy.ts` → `tests/proxy.test.ts`
+  - `src/modules/interviews/utils/feedback.utils.ts` → `tests/modules/interviews/utils/feedback.utils.test.ts` (one test file per utils file, one `describe` per function)
 - Shared test helpers (fakes, builders, mocks) go in `tests/helpers/`, not in a mirrored folder.
 - Import the code under test with `@/` and helpers with `@tests/` (both aliases are set in `tsconfig.json` and `vitest.config.ts`); no deep relative imports.
 - Run tests after changes and report real results.
@@ -148,3 +158,4 @@ Layer rules:
 - Don't hardcode API URLs, secrets or copy that belongs in config/constants.
 - Don't swallow errors silently or show raw error text to users.
 - Don't over-engineer: ship the minimum that works, then iterate.
+- Don't split a component into new files unless it passes the "earn its file" test in Components (reused, a real boundary, or big with its own state).
