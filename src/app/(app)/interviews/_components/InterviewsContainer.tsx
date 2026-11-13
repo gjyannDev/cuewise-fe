@@ -17,6 +17,8 @@ import {
   START_TIMEOUT_MESSAGE,
 } from "@/modules/interviews/constants";
 import {
+  useImportJobTextMutation,
+  useImportJobUrlMutation,
   useInterviewMessagesQuery,
   useInterviewQuery,
   useStartInterviewMutation,
@@ -44,6 +46,9 @@ export function InterviewsContainer({
   const router = useRouter();
   const sessionId = sessionParam.kind === "valid" ? sessionParam.id : undefined;
   const startInterview = useStartInterviewMutation();
+  // Fill the setup form's job description from a link or a whole pasted page; the form shows the result.
+  const importJobUrl = useImportJobUrlMutation();
+  const importJobText = useImportJobTextMutation();
   const interview = useInterviewQuery(sessionId);
   const messages = useInterviewMessagesQuery(sessionId);
   // Keeps the form busy until the interview screen has actually replaced it.
@@ -97,6 +102,12 @@ export function InterviewsContainer({
       <InterviewConfigForm
         isPending={startInterview.isPending || isNavigating}
         onSubmit={handleStart}
+        jobImport={{
+          importJobUrl: importJobUrl.mutateAsync,
+          importJobText: importJobText.mutateAsync,
+          isImportingLink: importJobUrl.isPending,
+          isImportingPaste: importJobText.isPending,
+        }}
       />
     );
   }
