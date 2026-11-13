@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_START_VALUES } from "@/modules/interviews/constants";
+import { DEFAULT_START_VALUES, ROLE_LABELS, ROLE_OPTIONS, ROLES } from "@/modules/interviews/constants";
 import {
   answerFormSchema,
   answerRequestSchema,
@@ -80,7 +80,17 @@ describe("startInterviewFormSchema", () => {
   });
 
   it("rejects a role the backend doesn't know", () => {
-    expect(issuesFor(startInterviewFormSchema.safeParse({ ...valid, role: "devops" }))).toEqual(["role"]);
+    expect(issuesFor(startInterviewFormSchema.safeParse({ ...valid, role: "sre" }))).toEqual(["role"]);
+  });
+
+  it.each(["designer", "qa", "devops"])("accepts the %s role", (role) => {
+    expect(startInterviewFormSchema.safeParse({ ...valid, role }).success).toBe(true);
+  });
+
+  it("has a label for every role the setup form offers", () => {
+    expect(ROLE_OPTIONS.map((option) => option.value)).toEqual(ROLES);
+    expect(ROLE_OPTIONS.every((option) => option.label.trim() !== "")).toBe(true);
+    expect(ROLE_LABELS).toMatchObject({ designer: "UI/UX Designer", qa: "QA Engineer", devops: "DevOps Engineer" });
   });
 
   it.each([0, 11, 2.5])("rejects a question count of %s", (question_count) => {
@@ -177,7 +187,7 @@ describe("interviewSchema", () => {
   it("rejects a non-UUID session id and an unknown role", () => {
     const result = interviewSchema.safeParse({
       ...response,
-      session: { ...response.session, id: "42", role: "devops" },
+      session: { ...response.session, id: "42", role: "sre" },
     });
 
     expect(issuesFor(result).sort()).toEqual(["session.id", "session.role"]);

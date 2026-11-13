@@ -1,17 +1,17 @@
 # Graph Report - cuewise-fe  (2026-11-13)
 
 ## Corpus Check
-- 223 files · ~145,607 words
+- 223 files · ~145,818 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 3 file(s) not represented in the graph (top: .example 1, (none) 1, .css 1)
 
 ## Summary
-- 1722 nodes · 4489 edges · 85 communities (82 shown, 3 thin omitted)
-- Extraction: 82% EXTRACTED · 18% INFERRED · 0% AMBIGUOUS · INFERRED: 795 edges (avg confidence: 0.95)
+- 1722 nodes · 4496 edges · 90 communities (87 shown, 3 thin omitted)
+- Extraction: 82% EXTRACTED · 18% INFERRED · 0% AMBIGUOUS · INFERRED: 799 edges (avg confidence: 0.95)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `05c6a9ec`
+- Built from commit: `52bc2be1`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -23,7 +23,7 @@
 - Cuewise FE — Project Instructions
 - Implementation: Auth Session (cookie-based BFF)
 - dependencies
-- AuthCard
+- signin/page.tsx
 - react
 - Implementation Steps
 - README.md
@@ -66,7 +66,7 @@
 - ActiveInterview.tsx
 - Skeleton
 - HistoryContainer.tsx
-- use-interview-feedback.ts
+- Button
 - avatar.tsx
 - InterviewTitleBar.tsx
 - Implementation Plan: Voice Answers
@@ -86,7 +86,7 @@
 - use-interview-chat.ts
 - Feature: Auth Session (cookie-based, Next.js as backend-for-frontend)
 - Feature: Job description import (link and smart paste)
-- AnswerComposer.tsx
+- job-import.utils.test.ts
 - DataTable
 - .answerStream
 - Implementation Steps
@@ -95,12 +95,17 @@
 - InterviewNotFoundCard.tsx
 - sidebar.tsx
 - SessionStatus
+- Implementation: Job description import (link and smart paste)
 - chat.utils.test.ts
 - Implementation Steps
 - Learn: Showing a slow, stored AI result (the interview feedback screen)
+- Implementation Plan: Job description import (link and smart paste)
+- Learn: Job description import in the setup form
 - eslint.config.mjs
-- Button
+- FeedbackResult.tsx
 - [...path]/route.test.ts
+- AnswerMicButton.tsx
+- signup/page.tsx
 
 ## God Nodes (most connected - your core abstractions)
 1. `react` - 70 edges
@@ -109,8 +114,8 @@
 4. `InterviewsContainer()` - 39 edges
 5. `parseApiError()` - 35 edges
 6. `lucide-react` - 34 edges
-7. `requireUser()` - 31 edges
-8. `InterviewConfigForm()` - 31 edges
+7. `InterviewConfigForm()` - 32 edges
+8. `requireUser()` - 31 edges
 9. `Implementation Steps` - 31 edges
 10. `Part A: Chat core` - 30 edges
 
@@ -129,7 +134,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (85 total, 3 thin omitted)
+## Communities (90 total, 3 thin omitted)
 
 ### Community 0 - "compilerOptions"
 Cohesion: 0.10
@@ -159,9 +164,9 @@ Nodes (12): Baseline Failures, Changes Made, Deviations from Plan, Implementatio
 Cohesion: 0.10
 Nodes (21): dependencies, axios, class-variance-authority, cn, @hookform/resolvers, lucide-react, motion, next (+13 more)
 
-### Community 7 - "AuthCard"
-Cohesion: 0.29
-Nodes (9): Layout & UX Design, AuthCard(), SessionExpiredNotice(), SignInContent(), SignInPage(), SignInPageProps, SignUpContent(), SignUpPage() (+1 more)
+### Community 7 - "signin/page.tsx"
+Cohesion: 0.53
+Nodes (4): SessionExpiredNotice(), SignInContent(), SignInPage(), SignInPageProps
 
 ### Community 8 - "react"
 Cohesion: 0.05
@@ -180,8 +185,8 @@ Cohesion: 0.12
 Nodes (21): Deviations from Plan, Affected Files & Patterns, Architecture & Design, Blockers & Resolutions, Implementation Plan: Interviews Chat Layout, Implementation Steps, Overview, Ready to Implement (+13 more)
 
 ### Community 13 - "feedback.utils.ts"
-Cohesion: 0.14
-Nodes (17): 5. What can go wrong, 6. Try it yourself, CRITERION_LABELS, FEEDBACK_ERROR_CODES, FEEDBACK_START_VALUE, SCORE_MAX, Criterion, FeedbackErrorResult (+9 more)
+Cohesion: 0.13
+Nodes (18): 5. What can go wrong, 6. Try it yourself, CRITERION_LABELS, FEEDBACK_ERROR_CODES, FEEDBACK_START_VALUE, SCORE_MAX, Criterion, FeedbackErrorResult (+10 more)
 
 ### Community 14 - "useMutationCallbacks"
 Cohesion: 0.10
@@ -196,8 +201,8 @@ Cohesion: 0.07
 Nodes (48): Trade-offs & Rationale, nextConfig, next, ref_server_only, zod, POST(), POST(), POST() (+40 more)
 
 ### Community 17 - "constants.ts"
-Cohesion: 0.08
-Nodes (38): sonner, InterviewConfigFormProps, SectionCardProps, TYPE_ICONS, TYPE_OPTIONS, DEFAULT_START_VALUES, FEEDBACK_DISCLAIMER, FEEDBACK_GENERATING_LABEL (+30 more)
+Cohesion: 0.09
+Nodes (34): AnswerComposerProps, RECORDER_ERROR_MESSAGES, InterviewConfigFormProps, SectionCardProps, TYPE_ICONS, TYPE_OPTIONS, ANSWER_COUNTER_FROM, ANSWER_MAX_LENGTH (+26 more)
 
 ### Community 18 - "Implementation Plan: App Sidebar (shared shell for user and admin)"
 Cohesion: 0.18
@@ -264,8 +269,8 @@ Cohesion: 0.13
 Nodes (14): Acceptance Criteria, Blockers, Constraints, Edge Cases, Feature: Interview Follow-up Questions (client support), Functional, Goal, Non-Functional (+6 more)
 
 ### Community 34 - "InterviewConfigForm"
-Cohesion: 0.27
-Nodes (14): AuthCardProps, COPY, Card(), CardContent(), CardDescription(), CardFooter(), CardHeader(), CardTitle() (+6 more)
+Cohesion: 0.26
+Nodes (17): Layout & UX Design, AuthCard(), AuthCardProps, COPY, Card(), CardContent(), CardDescription(), CardFooter() (+9 more)
 
 ### Community 35 - "Feature: Interview History Page (frontend)"
 Cohesion: 0.14
@@ -284,8 +289,8 @@ Cohesion: 0.20
 Nodes (8): Step 8: The live-turn reducer (`modules/interviews/utils/reduce-answer-stream.ts`), reduceTurn(), ANSWER_STREAM_START, reduceAnswerStream(), Q2, reaction, reset, run()
 
 ### Community 39 - "interviews.types.ts"
-Cohesion: 0.07
-Nodes (40): FEEDBACK_CRITERIA, FEEDBACK_STATUSES, HISTORY_PAGE_SIZES, HISTORY_SORT_COLUMNS, INTERVIEW_TYPES, JOB_PASTE_FORMATS, LEVELS, QUESTION_CATEGORIES (+32 more)
+Cohesion: 0.06
+Nodes (49): FEEDBACK_CRITERIA, FEEDBACK_STATUSES, HISTORY_PAGE_SIZES, HISTORY_SORT_COLUMNS, INTERVIEW_TYPES, JOB_PASTE_FORMATS, LEVELS, QUESTION_CATEGORIES (+41 more)
 
 ### Community 40 - "Implementation: Interview Follow-up Questions (client support)"
 Cohesion: 0.15
@@ -304,8 +309,8 @@ Cohesion: 0.14
 Nodes (13): Baseline Failures, Changes Made, Deviations from Plan, Implementation: Interviews Answer Flow, Known Issues, Links, Open Questions, Skills Consulted During Implementation (+5 more)
 
 ### Community 44 - "interviews.queries.ts"
-Cohesion: 0.13
-Nodes (18): Testing Strategy, FEEDBACK_POLL_MS, interviewKeys, AnswerStreamOptions, TranscribeVariables, interviewsService, recordingFileName(), TERMINAL_EVENTS (+10 more)
+Cohesion: 0.11
+Nodes (22): Testing Strategy, FEEDBACK_POLL_MS, FEEDBACK_RATE_LIMIT_MESSAGE, FEEDBACK_STALL_MS, useInterviewFeedback(), startGeneration(), interviewKeys, AnswerStreamOptions (+14 more)
 
 ### Community 45 - "isNoResponseError"
 Cohesion: 0.24
@@ -327,17 +332,17 @@ Nodes (7): SessionSkeleton(), AppLayout(), SidebarMenuSkeleton(), Skeleton(), RO
 Cohesion: 0.12
 Nodes (21): Architecture & Design, HistoryContainer(), HistoryContainerProps, NO_ROWS, HistoryContent(), HistoryPage(), HistoryPageProps, Alert() (+13 more)
 
-### Community 50 - "use-interview-feedback.ts"
-Cohesion: 0.36
-Nodes (8): FEEDBACK_RATE_LIMIT_MESSAGE, FEEDBACK_STALL_MS, useInterviewFeedback(), startGeneration(), useFeedbackQuery(), useGenerateFeedbackMutation(), FeedbackView, getFeedbackErrorResult()
+### Community 50 - "Button"
+Cohesion: 0.22
+Nodes (18): Trade-offs & Rationale, Deviations from Plan, Button(), buttonVariants, Dialog(), DialogClose(), DialogContent(), DialogDescription() (+10 more)
 
 ### Community 51 - "avatar.tsx"
 Cohesion: 0.22
 Nodes (6): Avatar(), AvatarFallback(), SidebarUserCard(), SidebarUserCardProps, SidebarUser, getInitials()
 
 ### Community 52 - "InterviewTitleBar.tsx"
-Cohesion: 0.10
-Nodes (25): Trade-offs & Rationale, Layout & UX Design, Dialog(), DialogClose(), DialogContent(), DialogDescription(), DialogFooter(), DialogHeader() (+17 more)
+Cohesion: 0.16
+Nodes (10): Layout & UX Design, DropdownMenu(), DropdownMenuContent(), DropdownMenuItem(), DropdownMenuLabel(), DropdownMenuSeparator(), DropdownMenuTrigger(), InterviewTitleBar() (+2 more)
 
 ### Community 53 - "Implementation Plan: Voice Answers"
 Cohesion: 0.09
@@ -393,7 +398,7 @@ Nodes (15): @tanstack/react-table, column, interviewHistoryColumns, RowAction(),
 
 ### Community 67 - "use-interview-chat.ts"
 Cohesion: 0.13
-Nodes (16): Affected Files & Patterns, INTERVIEWER_SLOW_LABEL, RESYNC_MESSAGE, THINKING_SLOW_AFTER_MS, UNCONFIRMED_SEND_MESSAGE, SendFailure, TurnAction, transcribe() (+8 more)
+Nodes (17): Affected Files & Patterns, Changes Made (cuewise-fe, uncommitted), INTERVIEWER_SLOW_LABEL, RESYNC_ERROR_CODES, RESYNC_MESSAGE, THINKING_SLOW_AFTER_MS, TRANSCRIPTION_ERROR_MESSAGES, TRANSCRIPTION_UNAVAILABLE_MESSAGE (+9 more)
 
 ### Community 68 - "Feature: Auth Session (cookie-based, Next.js as backend-for-frontend)"
 Cohesion: 0.17
@@ -403,9 +408,9 @@ Nodes (11): Blockers, Constraints, Edge Cases, Error handling (what the user see
 Cohesion: 0.12
 Nodes (15): Acceptance Criteria, Blockers, Constraints, Decisions, Edge Cases, Feature: Job description import (link and smart paste), Functional, Goal (+7 more)
 
-### Community 70 - "AnswerComposer.tsx"
-Cohesion: 0.10
-Nodes (19): Changes Made (cuewise-fe, uncommitted), AnswerComposerProps, RECORDER_ERROR_MESSAGES, ANSWER_COUNTER_FROM, ANSWER_MAX_LENGTH, EMPTY_RECORDING_MESSAGE, MICROPHONE_BLOCKED_MESSAGE, MICROPHONE_UNAVAILABLE_MESSAGE (+11 more)
+### Community 70 - "job-import.utils.test.ts"
+Cohesion: 0.14
+Nodes (15): sonner, JOB_DESCRIPTION_MAX_LENGTH, JOB_IMPORT_FAILED_MESSAGE, JOB_IMPORT_REPLACED_MESSAGE, JOB_PASTE_MAX_CHARS, JOB_TEXT_ERROR_CODE, JOB_URL_ERROR_CODES, JOB_URL_MAX_LENGTH (+7 more)
 
 ### Community 71 - "DataTable"
 Cohesion: 0.16
@@ -435,29 +440,49 @@ Nodes (3): InterviewNotFoundCardProps, INTERVIEW_NOT_FOUND_DESCRIPTION, INTERVIE
 Cohesion: 0.11
 Nodes (15): Sheet(), SheetContent(), SheetDescription(), SheetHeader(), SheetOverlay(), SheetPortal(), SheetTitle(), Sidebar() (+7 more)
 
+### Community 79 - "Implementation: Job description import (link and smart paste)"
+Cohesion: 0.15
+Nodes (12): Baseline Failures, Changes Made, Implementation: Job description import (link and smart paste), Known Issues, Links, Open Questions, Skills Consulted During Implementation, Status (+4 more)
+
 ### Community 80 - "chat.utils.test.ts"
 Cohesion: 0.09
 Nodes (24): FEEDBACK_TIMEOUT_MS, INTERVIEWER_THINKING_LABELS, INTERVIEWER_WRAP_UP_LABEL, TRANSCRIBE_TIMEOUT_MS, emptyFeedback(), feedback(), FEEDBACK_ID, feedbackQuestion() (+16 more)
 
 ### Community 81 - "Implementation Steps"
-Cohesion: 0.06
-Nodes (47): 1. Why it exists, 2. What it is, 3. When to use it, 4. How it works, 5. What can go wrong, 6. Try it yourself, 7. What surprised me, 8. Check your understanding (+39 more)
+Cohesion: 0.31
+Nodes (15): 4. How it works, 5. What can go wrong, Implementation Steps, Completed Steps, useJobDescriptionImport(), apply(), fail(), handlePaste() (+7 more)
 
 ### Community 82 - "Learn: Showing a slow, stored AI result (the interview feedback screen)"
 Cohesion: 0.22
 Nodes (8): 1. Why it exists, 2. What it is, 3. When to use it, 4. How it works, 7. What surprised me, 8. Check your understanding, 9. Go deeper / Still open, Learn: Showing a slow, stored AI result (the interview feedback screen)
 
+### Community 83 - "Implementation Plan: Job description import (link and smart paste)"
+Cohesion: 0.17
+Nodes (11): Architecture & Design, Blockers & Resolutions, Deviations found during implementation (2026-11-13), Implementation Plan: Job description import (link and smart paste), Overview, Project Rules Applied, Ready to Implement, Skills Consulted (+3 more)
+
+### Community 84 - "Learn: Job description import in the setup form"
+Cohesion: 0.22
+Nodes (8): 1. Why it exists, 2. What it is, 3. When to use it, 6. Try it yourself, 7. What surprised me, 8. Check your understanding, 9. Go deeper / Still open, Learn: Job description import in the setup form
+
 ### Community 85 - "eslint.config.mjs"
 Cohesion: 0.50
 Nodes (3): eslintConfig, eslint, eslint-config-next
 
-### Community 86 - "Button"
-Cohesion: 0.16
-Nodes (16): Button(), buttonVariants, AnswerMicButton(), AnswerMicButtonProps, clock(), MicState, FeedbackResult(), FeedbackResultProps (+8 more)
+### Community 86 - "FeedbackResult.tsx"
+Cohesion: 0.22
+Nodes (10): FeedbackResult(), FeedbackResultProps, HighlightsCard(), HighlightsCardProps, ScoreCardProps, TextList(), TextListProps, FEEDBACK_DISCLAIMER (+2 more)
 
 ### Community 87 - "[...path]/route.test.ts"
 Cohesion: 0.11
 Nodes (12): SseFrame, ANSWER_TIMEOUT_MS, fetchMock, cookieJar, nextHeadersMock, StoredCookie, encoder, openStream() (+4 more)
+
+### Community 88 - "AnswerMicButton.tsx"
+Cohesion: 0.50
+Nodes (4): AnswerMicButton(), AnswerMicButtonProps, clock(), MicState
+
+### Community 89 - "signup/page.tsx"
+Cohesion: 0.67
+Nodes (3): SignUpContent(), SignUpPage(), SignUpPageProps
 
 ## Knowledge Gaps
 - **563 isolated node(s):** `$schema`, `style`, `rsc`, `tsx`, `config` (+558 more)
@@ -467,11 +492,11 @@ Nodes (12): SseFrame, ANSWER_TIMEOUT_MS, fetchMock, cookieJar, nextHeadersMock, 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `react` connect `react` to `package.json`, `AppSidebar.tsx`, `AuthCard`, `Architecture & Design`, `next`, `constants.ts`, `ChatThread.tsx`, `requireUser`, `InterviewsContainer.tsx`, `InterviewConfigForm`, `history.utils.ts`, `interviews.queries.ts`, `ActiveInterview.tsx`, `Skeleton`, `HistoryContainer.tsx`, `use-interview-feedback.ts`, `avatar.tsx`, `InterviewTitleBar.tsx`, `Implementation Plan: Voice Answers`, `app/layout.tsx`, `FeedbackQuestionAccordion.tsx`, `AuthedShell.tsx`, `use-interview-chat.ts`, `AnswerComposer.tsx`, `DataTable`, `Implementation Steps`, `FeedbackStateMessage.tsx`, `InterviewNotFoundCard.tsx`, `sidebar.tsx`, `Button`?**
+- **Why does `react` connect `react` to `package.json`, `AppSidebar.tsx`, `signin/page.tsx`, `Architecture & Design`, `next`, `constants.ts`, `ChatThread.tsx`, `requireUser`, `InterviewsContainer.tsx`, `InterviewConfigForm`, `history.utils.ts`, `interviews.queries.ts`, `ActiveInterview.tsx`, `Skeleton`, `HistoryContainer.tsx`, `Button`, `avatar.tsx`, `InterviewTitleBar.tsx`, `Implementation Plan: Voice Answers`, `app/layout.tsx`, `FeedbackQuestionAccordion.tsx`, `AuthedShell.tsx`, `use-interview-chat.ts`, `job-import.utils.test.ts`, `DataTable`, `Implementation Steps`, `FeedbackStateMessage.tsx`, `InterviewNotFoundCard.tsx`, `sidebar.tsx`, `signup/page.tsx`?**
   _High betweenness centrality (0.099) - this node is a cross-community bridge._
-- **Why does `useMutationCallbacks()` connect `useMutationCallbacks` to `Implementation Steps`, `Architecture & Design`, `AuthFormContainer.tsx`, `Implementation Plan: App Sidebar (shared shell for user and admin)`, `Implementation Plan: Interviews Answer Flow`, `Part A: Chat core`, `Feature: Interview Feedback Screen (frontend)`, `done`, `InterviewsContainer.tsx`, `lucide-react`, `InterviewsContainer`, `isNoResponseError`, `ActiveInterview.tsx`, `use-interview-feedback.ts`, `Implementation Plan: Voice Answers`, `AuthForm.tsx`, `app/layout.tsx`, `Feature: Voice Answers (speak an answer, review the transcript, send)`, `apiClient`, `params`, `AuthedShell.tsx`, `use-interview-chat.ts`, `Feature: Auth Session (cookie-based, Next.js as backend-for-frontend)`, `Feature: Job description import (link and smart paste)`, `Implementation Steps`, `Implementation Steps`?**
+- **Why does `useMutationCallbacks()` connect `useMutationCallbacks` to `Implementation Steps`, `Architecture & Design`, `AuthFormContainer.tsx`, `Implementation Plan: App Sidebar (shared shell for user and admin)`, `Implementation Plan: Interviews Answer Flow`, `Part A: Chat core`, `Feature: Interview Feedback Screen (frontend)`, `done`, `InterviewsContainer.tsx`, `lucide-react`, `InterviewsContainer`, `interviews.queries.ts`, `isNoResponseError`, `ActiveInterview.tsx`, `Button`, `Implementation Plan: Voice Answers`, `AuthForm.tsx`, `app/layout.tsx`, `Feature: Voice Answers (speak an answer, review the transcript, send)`, `apiClient`, `params`, `AuthedShell.tsx`, `use-interview-chat.ts`, `Feature: Auth Session (cookie-based, Next.js as backend-for-frontend)`, `Feature: Job description import (link and smart paste)`, `Implementation Steps`, `Implementation: Job description import (link and smart paste)`, `Implementation Steps`, `Implementation Plan: Job description import (link and smart paste)`?**
   _High betweenness centrality (0.088) - this node is a cross-community bridge._
-- **Why does `Button()` connect `Button` to `AuthCard`, `react`, `Implementation Steps`, `Architecture & Design`, `constants.ts`, `ChatThread.tsx`, `InterviewsContainer.tsx`, `InterviewConfigForm`, `history.utils.ts`, `InterviewsContainer`, `ActiveInterview.tsx`, `HistoryContainer.tsx`, `InterviewTitleBar.tsx`, `AuthForm.tsx`, `AuthedShell.tsx`, `interview-history-columns.tsx`, `AnswerComposer.tsx`, `DataTable`, `Implementation Steps`, `FeedbackStateMessage.tsx`, `InterviewNotFoundCard.tsx`, `sidebar.tsx`, `Implementation Steps`?**
+- **Why does `Button()` connect `Button` to `react`, `Implementation Steps`, `Architecture & Design`, `constants.ts`, `ChatThread.tsx`, `InterviewsContainer.tsx`, `InterviewConfigForm`, `history.utils.ts`, `InterviewsContainer`, `ActiveInterview.tsx`, `HistoryContainer.tsx`, `InterviewTitleBar.tsx`, `AuthForm.tsx`, `AuthedShell.tsx`, `interview-history-columns.tsx`, `DataTable`, `Implementation Steps`, `FeedbackStateMessage.tsx`, `InterviewNotFoundCard.tsx`, `sidebar.tsx`, `Implementation Steps`, `FeedbackResult.tsx`, `AnswerMicButton.tsx`?**
   _High betweenness centrality (0.071) - this node is a cross-community bridge._
 - **Are the 5 inferred relationships involving `Button()` (e.g. with `Implementation Steps` and `Implementation Steps`) actually correct?**
   _`Button()` has 5 INFERRED edges - model-reasoned connections that need verification._

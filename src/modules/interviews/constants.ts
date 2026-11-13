@@ -2,7 +2,7 @@ export const INTERVIEWS_ROUTE = "/interviews";
 export const HISTORY_ROUTE = "/history";
 
 // Mirrors cuewise-be app/modules/interviews/interviews_constants.py; keep both in step.
-export const ROLES = ["frontend", "backend", "fullstack", "mobile", "data"] as const;
+export const ROLES = ["frontend", "backend", "fullstack", "mobile", "data", "designer", "qa", "devops"] as const;
 export const LEVELS = ["intern", "junior", "mid", "senior"] as const;
 export const INTERVIEW_TYPES = ["technical", "behavioral", "mixed"] as const;
 export const QUESTION_CATEGORIES = ["technical", "behavioral"] as const;
@@ -135,6 +135,9 @@ export const ROLE_LABELS: Record<(typeof ROLES)[number], string> = {
   fullstack: "Full-stack",
   mobile: "Mobile",
   data: "Data",
+  designer: "UI/UX Designer",
+  qa: "QA Engineer",
+  devops: "DevOps Engineer",
 };
 
 export const LEVEL_LABELS: Record<(typeof LEVELS)[number], string> = {
