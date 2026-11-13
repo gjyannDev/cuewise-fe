@@ -10,6 +10,7 @@ import type {
   Feedback,
   Interview,
   InterviewListParams,
+  JobTextRequest,
   StartInterviewRequest,
   Transcript,
 } from "../types/interviews.types";
@@ -31,6 +32,25 @@ export function useStartInterviewMutation() {
       // Starting abandons the previous in-progress interview and adds a row: the history is out of date.
       void queryClient.invalidateQueries({ queryKey: interviewKeys.lists() });
     },
+  });
+}
+
+/**
+ * A job posting's text from its link, for the setup form's job description. Nothing is cached: the text goes into
+ * the form for review, and only Start sends it. Errors go to the caller (`getJobImportErrorResult` decides where).
+ */
+export function useImportJobUrlMutation() {
+  return useMutation({
+    mutationKey: interviewKeys.importJobUrl(),
+    mutationFn: (url: string) => interviewsService.importJobUrl(url),
+  });
+}
+
+/** A whole posting page the candidate pasted, cleaned by cuewise-be. Same rules as `useImportJobUrlMutation`. */
+export function useImportJobTextMutation() {
+  return useMutation({
+    mutationKey: interviewKeys.importJobText(),
+    mutationFn: (request: JobTextRequest) => interviewsService.importJobText(request),
   });
 }
 

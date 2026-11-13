@@ -9,6 +9,7 @@ import {
   feedbackSchema,
   interviewListSchema,
   interviewSchema,
+  jobImportResponseSchema,
   transcriptionResponseSchema,
   transcriptSchema,
 } from "../schemas/interviews.schema";
@@ -19,6 +20,8 @@ import type {
   Interview,
   InterviewList,
   InterviewListParams,
+  JobImport,
+  JobTextRequest,
   StartInterviewRequest,
   Transcript,
   Transcription,
@@ -49,6 +52,21 @@ class InterviewsService {
   async start(params: StartInterviewRequest): Promise<Interview> {
     const data = await apiClient.post<unknown>(this.basePath, params, { timeout: START_TIMEOUT_MS });
     return interviewSchema.parse(data);
+  }
+
+  /**
+   * The text of a job posting, read by cuewise-be from its link (it refuses internal addresses and caps the fetch at
+   * 8 s, inside the default timeout). Nothing is stored: the text is for the candidate to review in the setup form.
+   */
+  async importJobUrl(url: string): Promise<JobImport> {
+    const data = await apiClient.post<unknown>(`${this.basePath}/job-url`, { url });
+    return jobImportResponseSchema.parse(data);
+  }
+
+  /** A whole posting page the candidate copied from their own browser, cleaned by cuewise-be like a fetched page. */
+  async importJobText(request: JobTextRequest): Promise<JobImport> {
+    const data = await apiClient.post<unknown>(`${this.basePath}/job-text`, request);
+    return jobImportResponseSchema.parse(data);
   }
 
   async get(id: string): Promise<Interview> {

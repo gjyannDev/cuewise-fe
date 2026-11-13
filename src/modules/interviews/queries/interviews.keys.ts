@@ -3,6 +3,9 @@ import type { InterviewListParams } from "../types/interviews.types";
 export const interviewKeys = {
   all: ["interviews"] as const,
   start: () => [...interviewKeys.all, "start"] as const,
+  // Job description import (setup form): mutations only, nothing is cached or stored.
+  importJobUrl: () => [...interviewKeys.all, "import", "url"] as const,
+  importJobText: () => [...interviewKeys.all, "import", "text"] as const,
   // History pages, one per page/filter; a sibling of detail(id), so invalidating one never touches the other.
   lists: () => [...interviewKeys.all, "list"] as const,
   list: (params: InterviewListParams) => [...interviewKeys.lists(), params] as const,

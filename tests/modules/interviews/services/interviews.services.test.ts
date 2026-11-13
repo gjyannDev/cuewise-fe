@@ -326,4 +326,43 @@ describe("interviewsService", () => {
       await expect(call()).rejects.toThrow();
     });
   });
+
+  describe("job description import", () => {
+    const imported = { text: "Data Engineer\nWe are looking for…", truncated: false };
+
+    it("importJobUrl posts only the link to /interviews/job-url and returns the parsed text (AC2)", async () => {
+      post.mockResolvedValue(imported);
+
+      await expect(interviewsService.importJobUrl("https://jobs.example.com/42")).resolves.toEqual(imported);
+      expect(post).toHaveBeenCalledWith("/interviews/job-url", { url: "https://jobs.example.com/42" });
+    });
+
+    it("importJobText posts the content and its format to /interviews/job-text (AC5)", async () => {
+      post.mockResolvedValue({ ...imported, truncated: true });
+
+      await expect(
+        interviewsService.importJobText({ content: "<main>Data Engineer</main>", format: "html" }),
+      ).resolves.toEqual({ ...imported, truncated: true });
+      expect(post).toHaveBeenCalledWith("/interviews/job-text", { content: "<main>Data Engineer</main>", format: "html" });
+    });
+
+    it.each([
+      ["importJobUrl", () => interviewsService.importJobUrl("https://jobs.example.com/42")],
+      ["importJobText", () => interviewsService.importJobText({ content: "text", format: "text" })],
+    ] as const)("%s rejects a reply that breaks the contract", async (_name, call) => {
+      post.mockResolvedValue({ text: "x" });
+
+      await expect(call()).rejects.toThrow();
+    });
+
+    it.each([
+      ["importJobUrl", () => interviewsService.importJobUrl("https://jobs.example.com/42")],
+      ["importJobText", () => interviewsService.importJobText({ content: "text", format: "text" })],
+    ] as const)("%s passes an API error through unchanged, for the error mapper", async (_name, call) => {
+      const blocked = axiosErrorWith(422, errorBody("JOB_URL_UNREACHABLE", "We couldn't open that link."));
+      post.mockRejectedValue(blocked);
+
+      await expect(call()).rejects.toBe(blocked);
+    });
+  });
 });
