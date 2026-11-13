@@ -8,6 +8,8 @@ import {
   HISTORY_SORT_COLUMNS,
   INTERVIEW_TYPES,
   JOB_DESCRIPTION_MAX_LENGTH,
+  JOB_PASTE_FORMATS,
+  JOB_URL_MAX_LENGTH,
   LEVELS,
   MAX_QUESTION_COUNT,
   MIN_QUESTION_COUNT,
@@ -48,6 +50,38 @@ export const startInterviewFormSchema = z.object({
     .max(JOB_DESCRIPTION_MAX_LENGTH, `Keep it under ${JOB_DESCRIPTION_MAX_LENGTH} characters`)
     .transform((value) => value || undefined)
     .optional(),
+});
+
+const jobUrlFormatMessage = "Enter a link starting with http:// or https://";
+
+/**
+ * The setup form's posting link, checked before any request. Only the shape: whether the server may open it is
+ * cuewise-be's decision (it refuses internal addresses, other ports and redirects into them).
+ */
+export const jobUrlSchema = z
+  .string()
+  .trim()
+  .min(1, "Enter a link")
+  .max(JOB_URL_MAX_LENGTH, `Keep the link under ${JOB_URL_MAX_LENGTH} characters`)
+  .refine((value) => {
+    try {
+      const url = new URL(value);
+      return (url.protocol === "http:" || url.protocol === "https:") && url.hostname !== "";
+    } catch {
+      return false;
+    }
+  }, jobUrlFormatMessage);
+
+/** POST /interviews/job-text: a whole posting page the candidate copied from their own browser. */
+export const jobTextRequestSchema = z.object({
+  content: z.string(),
+  format: z.enum(JOB_PASTE_FORMATS),
+});
+
+/** POST /interviews/job-url and /job-text: the posting's text, cut to the job description's limit when `truncated`. */
+export const jobImportResponseSchema = z.object({
+  text: z.string(),
+  truncated: z.boolean(),
 });
 
 const sessionSchema = z.object({

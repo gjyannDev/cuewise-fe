@@ -12,6 +12,8 @@ import type {
   interviewListSchema,
   interviewSchema,
   interviewTypeSchema,
+  jobImportResponseSchema,
+  jobTextRequestSchema,
   levelSchema,
   roleSchema,
   startInterviewFormSchema,
@@ -28,6 +30,14 @@ export type InterviewType = z.infer<typeof interviewTypeSchema>;
 export type StartInterviewFormValues = z.input<typeof startInterviewFormSchema>;
 /** The POST /interviews body, produced by the setup form's schema. */
 export type StartInterviewRequest = z.output<typeof startInterviewFormSchema>;
+
+/** The job description import routes' reply (link or pasted page). */
+export type JobImport = z.infer<typeof jobImportResponseSchema>;
+export type JobTextRequest = z.infer<typeof jobTextRequestSchema>;
+/** Where a failed import is shown: under the link field, under the job description, or as a toast. */
+export type JobImportErrorResult =
+  | { kind: "field"; target: "url" | "jobDescription"; message: string }
+  | { kind: "toast"; message: string };
 
 export type Interview = z.infer<typeof interviewSchema>;
 export type InterviewSession = Interview["session"];

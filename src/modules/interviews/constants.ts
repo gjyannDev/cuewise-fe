@@ -93,6 +93,42 @@ export const UNCONFIRMED_SEND_MESSAGE =
   "We couldn't confirm your answer was sent. Check the conversation before sending again.";
 export const START_TIMEOUT_MESSAGE = "Starting the interview took too long. Please try again.";
 
+// --- Job description import (setup form): cuewise-be POST /interviews/job-url and /job-text (Slice 8b) ---
+
+/** cuewise-be limits (keep in step): `JOB_URL_MAX_LENGTH` and `JOB_PASTE_MAX_CHARS` in interviews_constants.py. */
+export const JOB_URL_MAX_LENGTH = 2048;
+export const JOB_PASTE_MAX_CHARS = 1_000_000;
+/** cuewise-be error codes (keep in step). Their messages are written for the candidate, so they are shown as-is. */
+export const JOB_URL_ERROR_CODES = ["JOB_URL_UNREACHABLE", "JOB_URL_UNREADABLE"] as const;
+export const JOB_TEXT_ERROR_CODE = "JOB_TEXT_UNREADABLE";
+export const JOB_PASTE_FORMATS = ["html", "text"] as const;
+
+export const JOB_IMPORT_FAILED_MESSAGE = "Couldn't import the job description. Try again or paste it.";
+export const JOB_IMPORT_TRUNCATED_MESSAGE = "Shortened to fit. Review and edit.";
+export const JOB_IMPORT_REPLACED_MESSAGE = "Job description replaced";
+export const JOB_LINK_LABEL = "Posting link";
+export const JOB_LINK_PLACEHOLDER = "https://…";
+export const JOB_LINK_ACTION_LABEL = "Import";
+export const JOB_LINK_DESCRIPTION =
+  "Paste a link to a job posting. If the site doesn't allow it, open the posting, select all, copy, and paste it into the box below.";
+export const JOB_DESCRIPTION_PLACEHOLDER = "Paste the job posting here (you can paste the whole page)";
+
+/** The setup screen's blocking loading overlay: what the candidate is waiting for. */
+export const SETUP_LOADING_COPY = {
+  start: {
+    title: "Starting your interview…",
+    description: "Preparing your first question. This can take a few seconds.",
+  },
+  importLink: {
+    title: "Importing the job posting…",
+    description: "Reading the posting from the link.",
+  },
+  importPaste: {
+    title: "Cleaning up your paste…",
+    description: "Keeping the job posting and dropping the rest of the page.",
+  },
+} as const;
+
 export const ROLE_LABELS: Record<(typeof ROLES)[number], string> = {
   frontend: "Frontend",
   backend: "Backend",
