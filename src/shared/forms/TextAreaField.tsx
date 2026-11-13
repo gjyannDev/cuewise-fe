@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ClipboardEventHandler, ReactNode } from "react";
 
 import {
   Field,
@@ -26,6 +26,10 @@ type TextAreaFieldProps<TFormValues extends FieldValues> = {
   error?: string;
   /** Classes for the textarea; replaces the default fixed height. */
   className?: string;
+  /** Runs before the browser pastes; call `event.preventDefault()` to paste something else instead. */
+  onPaste?: ClipboardEventHandler<HTMLTextAreaElement>;
+  /** Work on the field's content is in progress (announced to assistive technology). */
+  busy?: boolean;
 };
 
 export function TextAreaField<TFormValues extends FieldValues>({
@@ -41,6 +45,8 @@ export function TextAreaField<TFormValues extends FieldValues>({
   register,
   error,
   className,
+  onPaste,
+  busy,
 }: TextAreaFieldProps<TFormValues>) {
   const descriptionId = description ? `${name}-description` : undefined;
   const errorId = error ? `${name}-error` : undefined;
@@ -65,11 +71,13 @@ export function TextAreaField<TFormValues extends FieldValues>({
         // Opt-in only, for fields that should take focus when they appear after a user action.
         autoFocus={autoFocus}
         aria-invalid={!!error}
+        aria-busy={busy || undefined}
         aria-describedby={[descriptionId, errorId].filter(Boolean).join(" ") || undefined}
         className={cn(
           "placeholder:text-sm placeholder:text-placeholder",
           className ?? "h-88",
         )}
+        onPaste={onPaste}
         {...register(name)}
       />
 
