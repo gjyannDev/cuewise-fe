@@ -1,6 +1,7 @@
 import {
   BarChart3,
   FileQuestion,
+  FileUser,
   History,
   LayoutDashboard,
   MessagesSquare,
@@ -33,6 +34,13 @@ const USER_SIDEBAR: SidebarConfig = {
           description: "Practice with questions matched to your role and level.",
         },
         { key: "history", title: "History", href: "/history", icon: History, description: "Your past interviews." },
+        {
+          key: "resume",
+          title: "Résumé",
+          href: "/resume",
+          icon: FileUser,
+          description: "Your profile from your résumé, for résumé-aware interviews.",
+        },
         { key: "progress", title: "Progress", href: "/progress", icon: BarChart3, description: "How your answers are improving." },
       ],
     },

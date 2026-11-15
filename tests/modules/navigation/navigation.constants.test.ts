@@ -23,6 +23,7 @@ describe("SIDEBAR_BY_ROLE", () => {
         ["Dashboard", "/"],
         ["AI Mock Interview", "/interviews"],
         ["History", "/history"],
+        ["Résumé", "/resume"],
         ["Progress", "/progress"],
       ],
       [["Settings", "/settings"]],
