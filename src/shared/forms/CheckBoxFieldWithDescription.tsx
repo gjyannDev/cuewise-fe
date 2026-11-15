@@ -54,9 +54,13 @@ export function CheckBoxFieldWithDescription<TFieldValues extends FieldValues>({
           >
             <Checkbox
               id={name}
+              ref={field.ref}
               onCheckedChange={(val: boolean) => field.onChange(val)}
+              onBlur={field.onBlur}
               checked={field.value}
               disabled={disabled}
+              aria-invalid={!!error}
+              aria-describedby={error ? `${name}-error` : undefined}
               className="
                 w-3.5 h-3.5
                 data-[state=checked]:border-primary
@@ -80,7 +84,7 @@ export function CheckBoxFieldWithDescription<TFieldValues extends FieldValues>({
         )}
       />
 
-      {error && <FieldError>{error}</FieldError>}
+      {error && <FieldError id={`${name}-error`}>{error}</FieldError>}
     </Field>
   );
 }
