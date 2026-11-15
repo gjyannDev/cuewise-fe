@@ -8,6 +8,7 @@ import {
   START_TIMEOUT_MS,
   TRANSCRIBE_FORWARD_TIMEOUT_MS,
 } from "@/modules/interviews/constants";
+import { RESUME_UPLOAD_FORWARD_TIMEOUT_MS } from "@/modules/profile/constants";
 
 /**
  * Catch-all BFF forwarder: the browser calls /api/<path>, this calls cuewise-be /api/v1/<path>
@@ -22,8 +23,8 @@ const OWNED_BY_NEXT = new Set(["auth/login", "auth/register", "auth/logout"]);
 
 /**
  * POSTs where cuewise-be waits on a model (the LLM up to 30s, plus a job-description summary on start; Deepgram up to
- * 20s for a recording; two feedback LLM calls up to 60s), so the default 15s would cut off requests that are still
- * succeeding. Same budgets as the browser side (interviews constants).
+ * 20s for a recording; two feedback LLM calls up to 60s; résumé extraction up to 20s), so the default 15s would cut
+ * off requests that are still succeeding. Same budgets as the browser side (interviews and profile constants).
  */
 const SLOW_POSTS: { path: RegExp; timeoutMs: number }[] = [
   { path: /^interviews\/[^/]+\/messages$/, timeoutMs: ANSWER_TIMEOUT_MS },
@@ -31,6 +32,7 @@ const SLOW_POSTS: { path: RegExp; timeoutMs: number }[] = [
   { path: /^interviews\/[^/]+\/transcriptions$/, timeoutMs: TRANSCRIBE_FORWARD_TIMEOUT_MS },
   { path: /^interviews\/[^/]+\/feedback$/, timeoutMs: FEEDBACK_FORWARD_TIMEOUT_MS },
   { path: /^interviews$/, timeoutMs: START_TIMEOUT_MS },
+  { path: /^profile\/resume$/, timeoutMs: RESUME_UPLOAD_FORWARD_TIMEOUT_MS },
 ];
 
 /** POSTs answered as Server-Sent Events: the body is passed through as it arrives, never read to the end here. */

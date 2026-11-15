@@ -143,8 +143,10 @@ describe("/api/[...path] forwarder", () => {
     ["GET", ["interviews", "0b7c2f4e-5d1a-4c3b-9e8f-1a2b3c4d5e6f", "feedback"], 15_000],
     ["GET", ["interviews", "0b7c2f4e-5d1a-4c3b-9e8f-1a2b3c4d5e6f", "messages"], 15_000],
     ["GET", ["interviews"], 15_000],
+    ["POST", ["profile", "resume"], 30_000],
+    ["GET", ["profile"], 15_000],
     ["POST", ["users"], 15_000],
-  ])("gives %s %j a %i ms budget (only the LLM-backed interview POSTs wait longer)", async (method, path, budget) => {
+  ])("gives %s %j a %i ms budget (only the LLM-backed POSTs wait longer)", async (method, path, budget) => {
     const timeout = vi.spyOn(AbortSignal, "timeout");
     fetchMock.mockResolvedValueOnce(jsonResponse(200, {}));
     const handler = method === "POST" ? POST : GET;
