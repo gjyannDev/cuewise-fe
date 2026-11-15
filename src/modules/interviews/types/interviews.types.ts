@@ -55,6 +55,9 @@ export type SessionParam = { kind: "none" } | { kind: "invalid" } | { kind: "val
 /** Field errors the setup form should show after a failed start. */
 export type StartInterviewFieldErrors = Partial<Record<keyof StartInterviewFormValues, string>>;
 
+/** Whether the candidate has a stored résumé profile, as far as the setup form knows (it gates the toggle). */
+export type ResumeStatus = "checking" | "available" | "missing" | "error";
+
 /**
  * What to do after a failed answer: refetch the interview, show the error under the answer, toast it, or (no
  * response at all) treat the outcome as unknown because the backend may have saved it.

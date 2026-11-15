@@ -92,6 +92,10 @@ export const RECORDING_LIMIT_MESSAGE = TRANSCRIPTION_ERROR_MESSAGES.AUDIO_TOO_LO
 export const UNCONFIRMED_SEND_MESSAGE =
   "We couldn't confirm your answer was sent. Check the conversation before sending again.";
 export const START_TIMEOUT_MESSAGE = "Starting the interview took too long. Please try again.";
+/** cuewise-be's 409 codes on POST /interviews that the form treats specially (keep in step: app/core/errors.py). */
+export const START_ERROR_CODES = {
+  profileRequired: "PROFILE_REQUIRED",
+} as const;
 
 // --- Job description import (setup form): cuewise-be POST /interviews/job-url and /job-text (Slice 8b) ---
 
@@ -112,6 +116,15 @@ export const JOB_LINK_ACTION_LABEL = "Import";
 export const JOB_LINK_DESCRIPTION =
   "Paste a link to a job posting. If the site doesn't allow it, open the posting, select all, copy, and paste it into the box below.";
 export const JOB_DESCRIPTION_PLACEHOLDER = "Paste the job posting here (you can paste the whole page)";
+
+/** The setup form's "Your résumé" card (Slice 8d): the toggle and why it may be unavailable. */
+export const SETUP_RESUME_COPY = {
+  toggleLabel: "Use my résumé",
+  checking: "Checking for your résumé…",
+  checkFailed: "We couldn't check for your résumé right now. You can still start without it.",
+  missing: "Upload your résumé first to use this option.",
+  uploadLink: "Go to Résumé",
+} as const;
 
 /** The setup screen's blocking loading overlay: what the candidate is waiting for. */
 export const SETUP_LOADING_COPY = {
@@ -162,13 +175,14 @@ export const INTERVIEW_TYPE_OPTIONS = [
   { value: "mixed", label: "Mixed", description: "A balance of both, like most real interviews." },
 ] as const satisfies readonly { value: (typeof INTERVIEW_TYPES)[number]; label: string; description: string }[];
 
-/** Role and level start unset so the user makes a deliberate choice. */
+/** Role and level start unset so the user makes a deliberate choice. The résumé is opt-in for every interview. */
 export const DEFAULT_START_VALUES = {
   role: undefined,
   level: undefined,
   interview_type: "mixed",
   question_count: 5,
   job_description: "",
+  use_profile: false,
 } as const;
 
 // --- History (/history): the user's past interviews, from GET /interviews ---

@@ -50,6 +50,8 @@ export const startInterviewFormSchema = z.object({
     .max(JOB_DESCRIPTION_MAX_LENGTH, `Keep it under ${JOB_DESCRIPTION_MAX_LENGTH} characters`)
     .transform((value) => value || undefined)
     .optional(),
+  // A real boolean only: cuewise-be's field is strict, so "true" or 1 would be a 422 there too.
+  use_profile: z.boolean({ error: "Choose whether to use your résumé" }),
 });
 
 const jobUrlFormatMessage = "Enter a link starting with http:// or https://";
@@ -91,6 +93,8 @@ const sessionSchema = z.object({
   interview_type: interviewTypeSchema,
   question_count: z.number().int(),
   job_description: z.string().nullable(),
+  // Whether main questions may draw on the candidate's résumé profile (Slice 8d). Never the profile itself.
+  use_profile: z.boolean(),
   status: z.enum(SESSION_STATUSES),
   created_at: z.string(),
 });

@@ -26,6 +26,7 @@ const interview = {
     interview_type: "mixed",
     question_count: 5,
     job_description: null,
+    use_profile: false,
     status: "in_progress",
     created_at: "2026-10-28T09:00:00Z",
   },
@@ -47,7 +48,13 @@ describe("interviewsService", () => {
 
   it("start posts the request body to /interviews with the start timeout and returns the parsed interview", async () => {
     post.mockResolvedValue(interview);
-    const body = { role: "backend", level: "junior", interview_type: "mixed", question_count: 5 } as const;
+    const body = {
+      role: "backend",
+      level: "junior",
+      interview_type: "mixed",
+      question_count: 5,
+      use_profile: true,
+    } as const;
 
     await expect(interviewsService.start(body)).resolves.toEqual(interview);
     expect(post).toHaveBeenCalledWith("/interviews", body, { timeout: START_TIMEOUT_MS });

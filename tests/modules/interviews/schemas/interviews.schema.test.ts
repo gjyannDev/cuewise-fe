@@ -63,13 +63,14 @@ describe("startInterviewFormSchema", () => {
     expect(startInterviewFormSchema.safeParse(valid).success).toBe(true);
   });
 
-  it("defaults to a mixed interview of 5 questions with no role or level", () => {
+  it("defaults to a mixed interview of 5 questions with no role or level, without the résumé", () => {
     expect(DEFAULT_START_VALUES).toEqual({
       role: undefined,
       level: undefined,
       interview_type: "mixed",
       question_count: 5,
       job_description: "",
+      use_profile: false,
     });
   });
 
@@ -117,7 +118,17 @@ describe("startInterviewFormSchema", () => {
       level: "junior",
       interview_type: "mixed",
       question_count: 5,
+      use_profile: false,
     });
+  });
+
+  it("sends use_profile as a real boolean: false by default, true when switched on (AC11, EC15, EC16)", () => {
+    expect(startInterviewFormSchema.parse(valid).use_profile).toBe(false);
+    expect(startInterviewFormSchema.parse({ ...valid, use_profile: true }).use_profile).toBe(true);
+  });
+
+  it.each(["true", 1, null])("rejects a use_profile of %j: cuewise-be only takes a real boolean (AC11)", (use_profile) => {
+    expect(issuesFor(startInterviewFormSchema.safeParse({ ...valid, use_profile }))).toEqual(["use_profile"]);
   });
 
   it("trims a job description that has text", () => {
@@ -140,6 +151,7 @@ describe("interviewSchema", () => {
       interview_type: "mixed",
       question_count: 5,
       job_description: null,
+      use_profile: false,
       status: "in_progress",
       created_at: "2026-10-28T09:00:00Z",
     },
@@ -155,6 +167,17 @@ describe("interviewSchema", () => {
 
   it("parses a POST /interviews response", () => {
     expect(interviewSchema.parse(response)).toEqual(response);
+  });
+
+  it("reads whether the interview uses the résumé (AC13, EC15)", () => {
+    const resumeAware = { ...response, session: { ...response.session, use_profile: true } };
+    expect(interviewSchema.parse(resumeAware).session.use_profile).toBe(true);
+  });
+
+  it("rejects a session without use_profile: cuewise-be always sends it", () => {
+    const { use_profile: _omitted, ...session } = response.session;
+    void _omitted;
+    expect(interviewSchema.safeParse({ ...response, session }).success).toBe(false);
   });
 
   it("parses a follow-up as the current question", () => {
@@ -237,6 +260,7 @@ describe("answerResponseSchema", () => {
     interview_type: "technical",
     question_count: 2,
     job_description: null,
+    use_profile: false,
     status: "in_progress",
     created_at: "2026-10-28T09:00:00Z",
   };

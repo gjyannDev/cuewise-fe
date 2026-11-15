@@ -54,6 +54,7 @@ export function answerResponse(next?: NextQuestion, reaction: Reaction = REACTIO
       interview_type: "behavioral",
       question_count: 2,
       job_description: null,
+      use_profile: false,
       status: next ? "in_progress" : "completed",
       created_at: "2026-10-30T09:00:00Z",
     },

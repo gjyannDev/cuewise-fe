@@ -24,11 +24,13 @@ import {
   useStartInterviewMutation,
 } from "@/modules/interviews/queries/interviews.queries";
 import type {
+  ResumeStatus,
   SessionParam,
   StartInterviewFieldErrors,
   StartInterviewRequest,
 } from "@/modules/interviews/types/interviews.types";
 import { getStartErrorResult } from "@/modules/interviews/utils/interview.utils";
+import { useMarkProfileMissing, useProfileQuery } from "@/modules/profile/queries/profile.queries";
 
 import { ActiveInterview } from "./ActiveInterview";
 
@@ -51,6 +53,16 @@ export function InterviewsContainer({
   const importJobText = useImportJobTextMutation();
   const interview = useInterviewQuery(sessionId);
   const messages = useInterviewMessagesQuery(sessionId);
+  // Gates the setup form's "Use my résumé" toggle; the same cached query as /resume.
+  const profile = useProfileQuery();
+  const markProfileMissing = useMarkProfileMissing();
+  const resumeStatus: ResumeStatus = profile.isPending
+    ? "checking"
+    : profile.data === undefined
+      ? "error"
+      : profile.data === null
+        ? "missing"
+        : "available";
   // Keeps the form busy until the interview screen has actually replaced it.
   const [isNavigating, startNavigation] = useTransition();
   // ponytail: client-only until cuewise-be can end a session; a reload shows the interview again (spec EC13).
@@ -78,6 +90,11 @@ export function InterviewsContainer({
     } catch (error) {
       const fieldErrors = getStartErrorResult(error);
       if (fieldErrors) {
+        // PROFILE_REQUIRED: cuewise-be just said there is no résumé (deleted since the form last checked), so the
+        // profile cache says so too and the toggle turns off, even if a refetch would have failed.
+        if (fieldErrors.use_profile) {
+          markProfileMissing();
+        }
         return fieldErrors;
       }
       (isNoResponseError(error)
@@ -102,6 +119,7 @@ export function InterviewsContainer({
       <InterviewConfigForm
         isPending={startInterview.isPending || isNavigating}
         onSubmit={handleStart}
+        resumeStatus={resumeStatus}
         jobImport={{
           importJobUrl: importJobUrl.mutateAsync,
           importJobText: importJobText.mutateAsync,

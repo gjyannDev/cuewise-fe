@@ -1,5 +1,6 @@
 import { parseApiError } from "@/lib/config/api.helper";
 
+import { START_ERROR_CODES } from "../constants";
 import { sessionParamSchema } from "../schemas/interviews.schema";
 import type {
   Interview,
@@ -24,18 +25,22 @@ const FORM_FIELDS = new Set<string>([
   "interview_type",
   "question_count",
   "job_description",
+  "use_profile",
 ] satisfies (keyof StartInterviewFormValues)[]);
 
 /**
  * Field errors to show on the setup form after a failed start, or null when the error belongs in a toast.
- * cuewise-be's only 409 here is NOT_ENOUGH_QUESTIONS (the bank can't fill this role/level/type/count);
- * its details name no field, so it goes under the question count, the field the user is most likely to change.
+ * cuewise-be has two 409s here. PROFILE_REQUIRED (use_profile with no stored résumé) goes under the résumé toggle.
+ * NOT_ENOUGH_QUESTIONS (the bank can't fill this role/level/type/count) names no field in its details, so it goes
+ * under the question count, the field the user is most likely to change.
  */
 export function getStartErrorResult(error: unknown): StartInterviewFieldErrors | null {
   const apiError = parseApiError(error);
 
   if (apiError.status === 409) {
-    return { question_count: apiError.message };
+    return apiError.code === START_ERROR_CODES.profileRequired
+      ? { use_profile: apiError.message }
+      : { question_count: apiError.message };
   }
 
   const fieldErrors = Object.fromEntries(

@@ -3,6 +3,7 @@
 import { ChevronDownIcon, LogOutIcon } from "lucide-react";
 import { useRef, useState } from "react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -65,10 +66,14 @@ export function InterviewTitleBar({ session, mainNumber, onEnd }: InterviewTitle
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <p className="shrink-0 text-sm text-muted-foreground tabular-nums">
-        <span className="sr-only">Question </span>
-        {mainNumber} of {session.question_count}
-      </p>
+      <div className="flex shrink-0 items-center gap-3">
+        {/* The session says so, not the current profile: a deleted résumé doesn't change what this interview was. */}
+        {session.use_profile && <Badge variant="outline">Résumé-aware</Badge>}
+        <p className="text-sm text-muted-foreground tabular-nums">
+          <span className="sr-only">Question </span>
+          {mainNumber} of {session.question_count}
+        </p>
+      </div>
 
       {onEnd && (
         <EndInterviewDialog

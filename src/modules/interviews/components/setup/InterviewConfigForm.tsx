@@ -5,6 +5,7 @@ import {
   BriefcaseIcon,
   CodeXmlIcon,
   FileTextIcon,
+  FileUserIcon,
   LayersIcon,
   ListOrderedIcon,
   Loader2Icon,
@@ -12,7 +13,8 @@ import {
   MessagesSquareIcon,
   UsersIcon,
 } from "lucide-react";
-import { type ReactNode, useCallback, useId } from "react";
+import Link from "next/link";
+import { type ReactNode, useCallback, useEffect, useId } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { FieldSet } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
+import { CheckBoxFieldWithDescription } from "@/shared/forms/CheckBoxFieldWithDescription";
 import { InputWithActionField } from "@/shared/forms/InputWithActionField";
 import { RadioGroupField } from "@/shared/forms/RadioGroupField";
 import { SelectField } from "@/shared/forms/SelectField";
@@ -45,6 +48,7 @@ import {
   ROLE_LABELS,
   ROLE_OPTIONS,
   SETUP_LOADING_COPY,
+  SETUP_RESUME_COPY,
 } from "@/modules/interviews/constants";
 import {
   type JobImportActions,
@@ -52,11 +56,13 @@ import {
 } from "@/modules/interviews/hooks/use-job-description-import";
 import { startInterviewFormSchema } from "@/modules/interviews/schemas/interviews.schema";
 import type {
+  ResumeStatus,
   StartInterviewFieldErrors,
   StartInterviewFormValues,
   StartInterviewRequest,
 } from "@/modules/interviews/types/interviews.types";
 import { formatQuestionCount } from "@/modules/interviews/utils/format.utils";
+import { RESUME_PROVIDER_NOTICE, RESUME_ROUTE } from "@/modules/profile/constants";
 
 type InterviewConfigFormProps = {
   isPending: boolean;
@@ -64,6 +70,8 @@ type InterviewConfigFormProps = {
   onSubmit: (request: StartInterviewRequest) => Promise<StartInterviewFieldErrors | void>;
   /** Fills the job description from a posting link or a whole pasted page (the container owns the requests). */
   jobImport: JobImportActions;
+  /** Whether a résumé profile is stored: only then can the interview use it. */
+  resumeStatus: ResumeStatus;
 };
 
 const TYPE_ICONS = { technical: CodeXmlIcon, behavioral: UsersIcon, mixed: LayersIcon };
@@ -72,7 +80,7 @@ const TYPE_OPTIONS = INTERVIEW_TYPE_OPTIONS.map((option) => ({ ...option, icon: 
 const notChosen = <span className="font-normal text-muted-foreground">Not chosen</span>;
 
 /** Presentational setup screen: the form plus a live summary with the Start button. The container starts the interview. */
-export function InterviewConfigForm({ isPending, onSubmit, jobImport }: InterviewConfigFormProps) {
+export function InterviewConfigForm({ isPending, onSubmit, jobImport, resumeStatus }: InterviewConfigFormProps) {
   const formId = useId();
   const form = useForm<StartInterviewFormValues, unknown, StartInterviewRequest>({
     resolver: zodResolver(startInterviewFormSchema),
@@ -80,12 +88,19 @@ export function InterviewConfigForm({ isPending, onSubmit, jobImport }: Intervie
     mode: "onTouched",
   });
   const { errors, isSubmitting } = form.formState;
-  const [role, level, interviewType, questionCount, jobDescription] = useWatch({
+  const [role, level, interviewType, questionCount, jobDescription, useProfile] = useWatch({
     control: form.control,
-    name: ["role", "level", "interview_type", "question_count", "job_description"],
+    name: ["role", "level", "interview_type", "question_count", "job_description", "use_profile"],
   });
   const jobDescriptionLength = jobDescription?.length ?? 0;
   const { setValue, setFocus } = form;
+  // The form owns the toggle's value, so it can't be derived: when the résumé goes away (deleted in another tab, or a
+  // PROFILE_REQUIRED start), switch it off so a disabled box never stays checked. The field error is kept.
+  useEffect(() => {
+    if (resumeStatus !== "available") {
+      setValue("use_profile", false);
+    }
+  }, [resumeStatus, setValue]);
   const setJobDescription = useCallback(
     (text: string) => setValue("job_description", text, { shouldDirty: true, shouldValidate: true }),
     [setValue],
@@ -124,6 +139,7 @@ export function InterviewConfigForm({ isPending, onSubmit, jobImport }: Intervie
     { label: "Style", value: interviewType ? INTERVIEW_TYPE_LABELS[interviewType] : notChosen },
     { label: "Length", value: formatQuestionCount(questionCount) },
     { label: "Job description", value: jobDescription?.trim() ? "Added" : notChosen },
+    { label: "Résumé", value: useProfile ? "Used" : notChosen },
   ];
 
   return (
@@ -240,6 +256,37 @@ export function InterviewConfigForm({ isPending, onSubmit, jobImport }: Intervie
             <p role="status" className="-mt-4 text-xs text-muted-foreground empty:hidden">
               {importer.showTruncatedNote ? JOB_IMPORT_TRUNCATED_MESSAGE : null}
             </p>
+          </SectionCard>
+
+          <SectionCard
+            icon={FileUserIcon}
+            title="Your résumé"
+            description="Get questions about your own projects and roles."
+            badge={<Badge variant="outline">Optional</Badge>}
+            className="@2xl:col-span-2"
+          >
+            <CheckBoxFieldWithDescription
+              name="use_profile"
+              control={form.control}
+              checkboxLabel={SETUP_RESUME_COPY.toggleLabel}
+              description={RESUME_PROVIDER_NOTICE}
+              disabled={isBusy || resumeStatus !== "available"}
+              error={errors.use_profile?.message}
+            />
+            {resumeStatus !== "available" && (
+              <p role="status" className="-mt-4 text-sm text-muted-foreground">
+                {resumeStatus === "checking" && SETUP_RESUME_COPY.checking}
+                {resumeStatus === "error" && SETUP_RESUME_COPY.checkFailed}
+                {resumeStatus === "missing" && (
+                  <>
+                    {SETUP_RESUME_COPY.missing}{" "}
+                    <Link href={RESUME_ROUTE} className="font-medium text-primary-text underline underline-offset-4">
+                      {SETUP_RESUME_COPY.uploadLink}
+                    </Link>
+                  </>
+                )}
+              </p>
+            )}
           </SectionCard>
         </FieldSet>
       </form>

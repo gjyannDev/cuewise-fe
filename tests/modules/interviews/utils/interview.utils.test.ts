@@ -41,6 +41,23 @@ describe("getStartErrorResult", () => {
     expect(getStartErrorResult(error)).toEqual({ question_count: "Not enough questions for this setup" });
   });
 
+  it("puts a 409 PROFILE_REQUIRED under the résumé toggle, not the question count (AC12, EC17)", () => {
+    const message =
+      "This interview is set to use your résumé, but you haven't uploaded one yet. Upload a résumé first, or start the interview without it.";
+    const error = axiosErrorWith(409, errorBody("PROFILE_REQUIRED", message));
+
+    expect(getStartErrorResult(error)).toEqual({ use_profile: message });
+  });
+
+  it("maps a 422 on use_profile onto the toggle", () => {
+    const error = axiosErrorWith(
+      422,
+      errorBody("VALIDATION_ERROR", "Invalid input", [{ field: "body.use_profile", issue: "Input should be a valid boolean" }]),
+    );
+
+    expect(getStartErrorResult(error)).toEqual({ use_profile: "Input should be a valid boolean" });
+  });
+
   it("maps 422 field errors onto the form fields", () => {
     const error = axiosErrorWith(
       422,
@@ -81,6 +98,7 @@ const session: Interview["session"] = {
   interview_type: "behavioral",
   question_count: 3,
   job_description: null,
+  use_profile: false,
   status: "in_progress",
   created_at: "2026-10-28T09:00:00Z",
 };
