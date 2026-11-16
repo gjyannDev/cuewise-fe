@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
-import { pickRecordingFormat } from "@/lib/utils";
+import { type DeviceError, deviceErrorKind, pickRecordingFormat } from "@/lib/media";
 
 export type RecorderStatus = "idle" | "requesting" | "recording";
-/** `denied`: permission refused or blocked; `no-device`: no microphone, or another app holds it. */
-export type RecorderError = "denied" | "no-device" | "failed";
+/** Why the microphone couldn't start (see `deviceErrorKind`). */
+export type RecorderError = DeviceError;
 /** `stopped` by the user, or stopped by itself at the time limit. */
 export type RecordingEnd = "stopped" | "limit";
 
@@ -22,13 +22,6 @@ function detectFormat(): string | null {
     return null;
   }
   return pickRecordingFormat((type) => MediaRecorder.isTypeSupported(type));
-}
-
-function errorKind(error: unknown): RecorderError {
-  const name = error instanceof DOMException ? error.name : "";
-  if (name === "NotAllowedError" || name === "SecurityError") return "denied";
-  if (name === "NotFoundError" || name === "NotReadableError" || name === "OverconstrainedError") return "no-device";
-  return "failed";
 }
 
 /**
@@ -51,6 +44,11 @@ export function useAudioRecorder({ maxSeconds, onRecorded }: AudioRecorderOption
   const onRecordedRef = useRef(onRecorded);
   useEffect(() => {
     onRecordedRef.current = onRecorded;
+  });
+  // Read by `check`, so it stays the same function across status changes (callers run it from effects).
+  const statusRef = useRef(status);
+  useEffect(() => {
+    statusRef.current = status;
   });
 
   const release = useCallback(() => {
@@ -117,7 +115,7 @@ export function useAudioRecorder({ maxSeconds, onRecorded }: AudioRecorderOption
       }
       release();
       recorder.current = null;
-      setError(errorKind(cause));
+      setError(deviceErrorKind(cause));
       setStatus("idle");
       return;
     }
@@ -135,6 +133,31 @@ export function useAudioRecorder({ maxSeconds, onRecorded }: AudioRecorderOption
   const stop = useCallback(() => finish("stopped"), [finish]);
   const cancel = useCallback(() => finish("cancelled"), [finish]);
 
+  /**
+   * Asks for the microphone without recording and lets go of it at once (a pre-join check): true when this browser
+   * can record and the microphone is usable, otherwise false with `error` set. Audio only, never with the camera.
+   */
+  const check = useCallback(async (): Promise<boolean> => {
+    if (!format) return false;
+    if (statusRef.current !== "idle") return statusRef.current === "recording";
+    setError(null);
+    setStatus("requesting");
+    statusRef.current = "requesting";
+    const mine = ++attempt.current;
+    try {
+      const granted = await navigator.mediaDevices.getUserMedia({ audio: true });
+      granted.getTracks().forEach((track) => track.stop());
+      if (mine !== attempt.current) return false;
+      setStatus("idle");
+      return true;
+    } catch (cause) {
+      if (mine !== attempt.current) return false;
+      setError(deviceErrorKind(cause));
+      setStatus("idle");
+      return false;
+    }
+  }, [format]);
+
   // Unmounting (another question, or leaving the screen) drops whatever is being recorded.
   useEffect(() => () => finish("cancelled"), [finish]);
 
@@ -148,5 +171,6 @@ export function useAudioRecorder({ maxSeconds, onRecorded }: AudioRecorderOption
     start,
     stop,
     cancel,
+    check,
   };
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { pickRecordingFormat } from "@/lib/utils";
+import { deviceErrorKind, pickRecordingFormat } from "@/lib/media";
 
 const supports =
   (...types: string[]) =>
@@ -25,5 +25,24 @@ describe("pickRecordingFormat", () => {
   it("returns null when the browser can record none of them (EC1)", () => {
     expect(pickRecordingFormat(supports("audio/wav"))).toBeNull();
     expect(pickRecordingFormat(() => false)).toBeNull();
+  });
+});
+
+describe("deviceErrorKind", () => {
+  it.each(["NotAllowedError", "SecurityError"])("%s means the user or the browser blocked access", (name) => {
+    expect(deviceErrorKind(new DOMException("blocked", name))).toBe("denied");
+  });
+
+  it.each(["NotFoundError", "NotReadableError", "OverconstrainedError"])(
+    "%s means there is no usable device (missing, or another app holds it)",
+    (name) => {
+      expect(deviceErrorKind(new DOMException("no device", name))).toBe("no-device");
+    },
+  );
+
+  it("treats anything else as a plain failure", () => {
+    expect(deviceErrorKind(new DOMException("aborted", "AbortError"))).toBe("failed");
+    expect(deviceErrorKind(new Error("boom"))).toBe("failed");
+    expect(deviceErrorKind("not an error")).toBe("failed");
   });
 });
