@@ -8,7 +8,7 @@
 
 Next.js 16 (App Router) + React 19 + TypeScript. Tailwind v4 + shadcn/ui (Radix), TanStack Query, axios, react-hook-form + zod, zustand, sonner. Code lives in `src/`.
 
-**This is Next.js 16, not the version in your training data.** Before writing Next-specific code (routing, `proxy.ts`, Route Handlers, `cookies()`, `params`/`searchParams`, caching), read the relevant guide in `node_modules/next/dist/docs/` and heed deprecations. Notable: `middleware.ts` is now `proxy.ts`; `params`, `searchParams` and `cookies()` are async.
+**This is Next.js 16, not the version in your training data.** Before writing Next-specific code (routing, `proxy.ts`, Route Handlers, `cookies()`, `params`/`searchParams`, caching), read the relevant guide in `node_modules/next/dist/docs/` and heed deprecations. Notable: `middleware.ts` is now `proxy.ts`; `params`, `searchParams` and `cookies()` are async. With `cacheComponents` (on here), navigating away **hides** a page in React `<Activity>` instead of unmounting it: effect cleanups run but state is kept, so a flow that must start over on return (the interview room) resets itself in a `useLayoutEffect` cleanup (guide: `02-guides/preserving-ui-state.md`).
 
 ## Git Rules (STRICT)
 - **NEVER commit, push, or open PRs** unless the user explicitly asks in that message.
@@ -41,9 +41,11 @@ src/
     forms/                     # TextField, PasswordField, SelectField, CheckboxField, CheckBoxFieldWithDescription, RadioGroupField, SliderField, TextAreaField
     ui/                        # composed UI pieces (BreadCrumbs, ...)
   hooks/                       # shared hooks (use-mutation-callback, ...)
+    media/                     # the media kit: browser devices and audio (use-audio-recorder, use-camera, use-audio-player). Feature-agnostic: ESLint forbids `@/modules/*` imports here
   lib/
     api/                       # api.client.ts (`apiClient`: the HTTP wrapper every service uses) + generic transport helpers (sse.ts: SSE frame parser)
     config/                    # axios clients, query client, api error helpers
+    media.ts                   # media kit helpers: pickRecordingFormat, deviceErrorKind, DEVICE_ERROR_MESSAGES (same import rule as hooks/media)
     utils.ts                   # cn() and other generic helpers
   modules/
     <feature>/                 # e.g. auth/
@@ -53,7 +55,7 @@ src/
       schemas/<feature>.schema.ts      # zod schemas (forms, requests, responses)
       types/<feature>.types.ts         # types, inferred via z.infer where possible
       stores/<feature>.store.ts        # zustand, client-only UI state (never server data)
-      components/<area>/               # feature components, always in an area folder (never flat): e.g. interviews/components/{chat,setup,history,feedback,common}/
+      components/<area>/               # feature components, always in an area folder (never flat): e.g. interviews/components/{room,transcript,setup,history,feedback,common}/
       hooks/use-<thing>.ts             # feature hooks, one hook per file
       utils/<area>.utils.ts            # pure helpers grouped by area (feedback.utils.ts, history.utils.ts, ...), never one file per function
       constants.ts                     # feature constants and copy
@@ -67,6 +69,7 @@ Layer rules:
 - **Components** never import services, axios, `API` or `apiClient` directly, and never build query keys inline.
 - Layers only call downward: component → query → service. Never skip a layer.
 - Features don't import each other's internals (services/stores); use the other feature's exported queries/hooks.
+- **Multi-step client flows (the interview room) are a reducer that returns effects.** `reduceRoomTurn(state, event) → { state, effects }` (`modules/interviews/utils/room.utils.ts`) holds every rule as a pure, unit-tested function; effects are plain data (`{ type: "stopAudio" }`). A thin hook (`use-interview-turn`) runs them against **injected collaborators** (the `VoicePort`, the recorder, the answer sender), so it imports no device code and no service, and tests pass fakes. Inside `interviews`, only `use-interview-voice` (the voice adapter) and the container that wires the recorder and the camera (`ActiveInterview`) may import `@/hooks/media`; the camera tile only receives the stream.
 - Feature-agnostic code goes in `shared/`, `hooks/` or `lib/`, never duplicated across modules.
 
 ## Components
@@ -75,7 +78,7 @@ Layer rules:
 - Move non-trivial logic out of JSX: derived values into the area's `utils/<area>.utils.ts` (pure functions), stateful logic into a custom hook (`use-<thing>.ts`).
 - **Reuse before creating.** Check `src/components/ui/`, `src/shared/` and the feature's `components/` first. If you write the same UI twice, extract it to `shared/`.
 - Default to **Server Components**; add `"use client"` only where interactivity, hooks or browser APIs are needed, and push it as far down the tree as possible.
-- **Folders by area.** A feature's components live in `components/<area>/` (the screen or part of the app they belong to: `chat/`, `setup/`, `history/`, `feedback/`, ...). Pieces used by several areas go in `components/common/`; pieces used by several features go in `src/shared/`. Never add a component directly under `components/`.
+- **Folders by area.** A feature's components live in `components/<area>/` (the screen or part of the app they belong to: `room/`, `transcript/`, `setup/`, `history/`, `feedback/`, ...). Pieces used by several areas go in `components/common/`; pieces used by several features go in `src/shared/`. Never add a component directly under `components/`.
 - **One exported component per file.** `PascalCase.tsx`, named export, props typed with a `type <Name>Props`.
 - **Don't split by default; a new component has to earn its file.** Write the screen piece as one component first. Create a new component file only if at least one of these is true:
   1. **Reused:** two or more files import it.
@@ -131,6 +134,7 @@ Layer rules:
   - `src/proxy.ts` → `tests/proxy.test.ts`
   - `src/modules/interviews/utils/feedback.utils.ts` → `tests/modules/interviews/utils/feedback.utils.test.ts` (one test file per utils file, one `describe` per function)
 - Shared test helpers (fakes, builders, mocks) go in `tests/helpers/`, not in a mirrored folder.
+- Tests run in **node** by default. Hook and component tests opt into a DOM per file: first line `// @vitest-environment happy-dom`, file name `.test.tsx`, `renderHook`/`render` from `@testing-library/react`. Never rely on happy-dom's camera, microphone or audio playback: use the fakes in `tests/helpers/media.ts` (`installMediaFakes()`).
 - Import the code under test with `@/` and helpers with `@tests/` (both aliases are set in `tsconfig.json` and `vitest.config.ts`); no deep relative imports.
 - Run tests after changes and report real results.
 
