@@ -103,6 +103,36 @@ export const ROOM_STATUS_LABELS: Record<RoomPhase, string> = {
 /** A recording stops by itself here (cuewise-be rejects a reported duration over 125 s). */
 export const RECORDING_MAX_SECONDS = 120;
 
+// --- Room polish: lobby, stage and control bar copy (docs/features/interview-room-polish) ---
+
+/** The lobby's rough length: minutes allowed per question (see `estimateMinutes`). */
+export const MINUTES_PER_QUESTION = 3;
+export const LOBBY_TIP = "Answer out loud, like a real interview.";
+/** The lobby's mic test: how long it listens, and what it says. */
+export const MIC_TEST_SECONDS = 10;
+export const MIC_TEST_LABEL = "Test microphone";
+export const MIC_TEST_LISTENING = "Say something…";
+export const MIC_TEST_HEARD = "We heard you. Your microphone works.";
+export const MIC_TEST_NOT_HEARD = "We couldn't hear you. Check your microphone.";
+/** Said once in the room's status region after 3 s of silence while recording (spec AC4). */
+export const SILENCE_HINT = "We can't hear you. Check your microphone.";
+/** The control bar's names: each icon button's accessible name and its tooltip are the same text (spec AC1). */
+export const CONTROL_LABELS = {
+  camera: "Camera",
+  mute: "Mute interviewer",
+  replay: "Replay question",
+  cancel: "Cancel recording",
+  end: "End interview",
+  transcript: "Transcript",
+  shortcuts: "Keyboard shortcuts",
+} as const;
+/** The shortcuts help popover (spec AC13). */
+export const ROOM_SHORTCUTS = [
+  { keys: ["Space"], action: "Start or stop recording" },
+  { keys: ["Esc"], action: "Cancel recording" },
+  { keys: ["Ctrl", "Enter"], action: "Send your answer" },
+] as const;
+
 /**
  * cuewise-be's error codes for POST /interviews/{id}/transcriptions (interviews_route + core/errors.py; keep in step),
  * with what the candidate sees for each. Anything else (no response, 503, unknown) shows the unavailable message.

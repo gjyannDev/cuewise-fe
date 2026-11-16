@@ -188,3 +188,8 @@ export function getAnswerErrorResult(error: unknown): AnswerErrorResult {
   }
   return { kind: "toast" };
 }
+
+/** What the interviewer said last (the stage's captions): plain text, empty before anything was said. */
+export function latestInterviewerText(items: TranscriptLine[]): string {
+  return items.findLast((item) => item.role === "interviewer")?.text ?? "";
+}

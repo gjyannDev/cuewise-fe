@@ -7,6 +7,7 @@ import {
   appendAnswerTurn,
   buildTranscriptView,
   getAnswerErrorResult,
+  latestInterviewerText,
   pickThinkingLabel,
 } from "@/modules/interviews/utils/transcript.utils";
 import { AnswerStreamError } from "@/modules/interviews/utils/stream.utils";
@@ -391,5 +392,28 @@ describe("getAnswerErrorResult", () => {
     ["the /api forwarder's 503", axiosErrorWith(503, errorBody("SERVICE_UNAVAILABLE", "Something went wrong"))],
   ])("treats %s as an unknown outcome (the answer may have been saved)", (_, error) => {
     expect(getAnswerErrorResult(error)).toEqual({ kind: "unknown" });
+  });
+});
+
+describe("latestInterviewerText", () => {
+  const line = (item: ReturnType<typeof transcriptItem>) => ({ ...item, key: item.id });
+
+  it("is the interviewer's last line, for the captions (AC10)", () => {
+    const items = [
+      line(transcriptItem("question", Q1, 1)),
+      line(transcriptItem("answer", Q1, 1)),
+      line(transcriptItem("reaction", Q1, 1)),
+      line(transcriptItem("question", Q2, 2)),
+    ];
+    expect(latestInterviewerText(items)).toBe("question 2");
+  });
+
+  it("skips the candidate's answers after it", () => {
+    const items = [line(transcriptItem("question", Q1, 1)), line(transcriptItem("answer", Q1, 1))];
+    expect(latestInterviewerText(items)).toBe("question 1");
+  });
+
+  it("is empty before anything was said", () => {
+    expect(latestInterviewerText([])).toBe("");
   });
 });

@@ -1,4 +1,4 @@
-import { FOLLOW_UP_CAPTION, LEVEL_LABELS, ROLE_LABELS } from "../constants";
+import { FOLLOW_UP_CAPTION, LEVEL_LABELS, MINUTES_PER_QUESTION, ROLE_LABELS } from "../constants";
 import type { InterviewSession, TranscriptItem } from "../types/interviews.types";
 
 /** The interview named the way you'd say it out loud ("Junior Backend interview"); the style and length live elsewhere. */
@@ -30,3 +30,14 @@ export const formatQuestionCaption = (
   { question_kind, main_number }: Pick<TranscriptItem, "question_kind" | "main_number">,
   total: number,
 ) => (question_kind === "follow_up" ? FOLLOW_UP_CAPTION : formatQuestionPosition(main_number, total));
+
+/** A rough length for the lobby: a few minutes a question, rounded up to the next 5 (a guide, not a promise). */
+export const estimateMinutes = (questionCount: number) => Math.ceil((questionCount * MINUTES_PER_QUESTION) / 5) * 5;
+
+/** The lobby's one-line summary: "Junior Backend · 3 questions · about 10 min". */
+export const formatLobbySummary = ({
+  level,
+  role,
+  question_count,
+}: Pick<InterviewSession, "level" | "role" | "question_count">) =>
+  `${LEVEL_LABELS[level]} ${ROLE_LABELS[role]} · ${formatQuestionCount(question_count)} · about ${estimateMinutes(question_count)} min`;

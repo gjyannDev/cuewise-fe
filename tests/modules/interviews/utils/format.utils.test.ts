@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import { FOLLOW_UP_CAPTION } from "@/modules/interviews/constants";
 import {
+  estimateMinutes,
   formatClock,
   formatInterviewCount,
   formatInterviewDate,
   formatInterviewTitle,
+  formatLobbySummary,
   formatProgress,
   formatQuestionCaption,
 } from "@/modules/interviews/utils/format.utils";
@@ -80,5 +82,28 @@ describe("formatQuestionCaption", () => {
 
     expect(formatQuestionCaption(followUp, 5)).toBe(FOLLOW_UP_CAPTION);
     expect(FOLLOW_UP_CAPTION).toBe("Follow-up");
+  });
+});
+
+describe("estimateMinutes", () => {
+  it("allows 3 minutes a question, rounded up to the next 5 (spec, Lobby)", () => {
+    expect(estimateMinutes(1)).toBe(5);
+    expect(estimateMinutes(3)).toBe(10);
+    expect(estimateMinutes(5)).toBe(15);
+    expect(estimateMinutes(10)).toBe(30);
+  });
+});
+
+describe("formatLobbySummary", () => {
+  it("names the level, role, question count and rough length (AC17)", () => {
+    expect(formatLobbySummary({ level: "junior", role: "backend", question_count: 3 })).toBe(
+      "Junior Backend · 3 questions · about 10 min",
+    );
+  });
+
+  it("says question in the singular for one", () => {
+    expect(formatLobbySummary({ level: "senior", role: "frontend", question_count: 1 })).toBe(
+      "Senior Frontend · 1 question · about 5 min",
+    );
   });
 });
