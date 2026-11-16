@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMutationCallbacks } from "@/hooks/use-mutation-callback";
 import { isNoResponseError, parseApiError } from "@/lib/config/api.helper";
-import { cn } from "@/lib/utils";
 import { InterviewConfigForm } from "@/modules/interviews/components/setup/InterviewConfigForm";
 import { InterviewMessageCard } from "@/modules/interviews/components/common/InterviewMessageCard";
 import { InterviewNotFoundCard } from "@/modules/interviews/components/common/InterviewNotFoundCard";
@@ -36,6 +35,8 @@ import { ActiveInterview } from "./ActiveInterview";
 
 type InterviewsContainerProps = {
   sessionParam: SessionParam;
+  /** The signed-in user's initials, for the room's camera-off tile. */
+  initials: string;
 };
 
 /**
@@ -44,6 +45,7 @@ type InterviewsContainerProps = {
  */
 export function InterviewsContainer({
   sessionParam,
+  initials,
 }: InterviewsContainerProps) {
   const router = useRouter();
   const sessionId = sessionParam.kind === "valid" ? sessionParam.id : undefined;
@@ -173,47 +175,35 @@ export function InterviewsContainer({
       isEnded={endedSessionId === sessionId}
       onEnd={() => setEndedSessionId(sessionId)}
       onStartNew={goToSetup}
+      initials={initials}
     />
   );
 }
 
-const SKELETON_BUBBLES = [
-  { side: "left", width: "w-3/4" },
-  { side: "right", width: "w-2/3" },
-  { side: "left", width: "w-1/3" },
-  { side: "left", width: "w-4/5" },
-] as const;
-
-/** Same frame as InterviewChat (centered fixed-height column, bar on top) so nothing jumps when the chat arrives. */
+/** Same frame as the interview room (fixed-height, title bar, stage with its control bar, transcript column), so nothing jumps when it arrives. */
 function SessionSkeleton() {
   return (
     <div
       aria-busy="true"
       aria-live="polite"
-      className="mx-auto flex h-[calc(100dvh-var(--app-header-height)-2*var(--app-content-py))] min-h-0 w-full max-w-3xl flex-col gap-3"
+      className="mx-auto flex h-[calc(100dvh-var(--app-header-height)-2*var(--app-content-py))] min-h-0 w-full max-w-6xl flex-col gap-3"
     >
       <span className="sr-only">Loading your interview…</span>
       <div className="flex h-11 shrink-0 items-center justify-between gap-3 pb-2">
         <Skeleton className="h-5 w-56" />
         <Skeleton className="h-4 w-12" />
       </div>
-      <div className="flex flex-1 flex-col justify-end gap-3 py-4">
-        {SKELETON_BUBBLES.map((bubble, index) => (
-          <div
-            key={index}
-            className={cn(
-              "flex items-end gap-2",
-              bubble.side === "right" && "justify-end",
-            )}
-          >
-            {bubble.side === "left" && (
-              <Skeleton className="size-6 shrink-0 rounded-full" />
-            )}
-            <Skeleton className={cn("h-12 rounded-2xl", bubble.width)} />
+      <div className="grid min-h-0 flex-1 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(320px,400px)]">
+        <div className="flex min-h-0 flex-col gap-3">
+          <Skeleton className="min-h-0 flex-1 rounded-xl" />
+          <div className="flex shrink-0 justify-center gap-2 pt-3">
+            {Array.from({ length: 5 }, (_, index) => (
+              <Skeleton key={index} className="size-11 rounded-full" />
+            ))}
           </div>
-        ))}
+        </div>
+        <Skeleton className="hidden rounded-xl md:block" />
       </div>
-      <Skeleton className="h-24 w-full shrink-0 rounded-2xl" />
     </div>
   );
 }

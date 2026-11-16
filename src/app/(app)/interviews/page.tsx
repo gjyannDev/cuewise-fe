@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { requireUser } from "@/modules/auth/session/current-user.server";
 import { INTERVIEWS_ROUTE } from "@/modules/interviews/constants";
 import { parseSessionParam } from "@/modules/interviews/utils/interview.utils";
+import { getInitials } from "@/shared/sidebar/utils/get-initials";
 
 import { InterviewsContainer } from "./_components/InterviewsContainer";
 
@@ -23,8 +24,9 @@ export default function InterviewsPage({ searchParams }: InterviewsPageProps) {
 }
 
 async function InterviewsContent({ searchParams }: InterviewsPageProps) {
-  await requireUser(INTERVIEWS_ROUTE);
+  const user = await requireUser(INTERVIEWS_ROUTE);
   const { session } = await searchParams;
 
-  return <InterviewsContainer sessionParam={parseSessionParam(session)} />;
+  // Only the initials reach the room (its no-camera tile), not the email they come from.
+  return <InterviewsContainer sessionParam={parseSessionParam(session)} initials={getInitials(user.email)} />;
 }

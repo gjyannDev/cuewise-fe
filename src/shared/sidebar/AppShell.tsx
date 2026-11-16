@@ -12,7 +12,7 @@ type AppShellProps = {
 /**
  * Signed-in page frame: sidebar slot, header with the collapse trigger and page title, and the page content.
  * The header height and content padding are CSS variables so pages can size against them (sticky offsets, the
- * fixed-height interview chat) without repeating the numbers.
+ * fixed-height interview room) without repeating the numbers.
  */
 export function AppShell({ sidebar, title, children }: AppShellProps) {
   return (

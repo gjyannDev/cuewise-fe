@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 // resizes-content: where supported (Android Chrome) the on-screen keyboard shrinks the layout, so full-height
-// screens like the interview chat keep their composer above it. iOS Safari ignores it and pans instead.
+// screens keep their bottom controls above it. iOS Safari ignores it and pans instead.
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,

@@ -13,15 +13,10 @@ import type { FieldValues, Path, UseFormRegister } from "react-hook-form";
 type TextAreaFieldProps<TFormValues extends FieldValues> = {
   name: Path<TFormValues>;
   label?: string;
-  /** Keep the label for screen readers only (e.g. a chat composer whose purpose is clear from the layout). */
-  hideLabel?: boolean;
   description?: ReactNode;
   placeholder?: string;
   rows?: number;
   disabled?: boolean;
-  /** Unlike `disabled`, keeps focus in the field (e.g. while a message is sending). */
-  readOnly?: boolean;
-  autoFocus?: boolean;
   register: UseFormRegister<TFormValues>;
   error?: string;
   /** Classes for the textarea; replaces the default fixed height. */
@@ -35,13 +30,10 @@ type TextAreaFieldProps<TFormValues extends FieldValues> = {
 export function TextAreaField<TFormValues extends FieldValues>({
   name,
   label,
-  hideLabel = false,
   description,
   placeholder,
   rows = 4,
   disabled,
-  readOnly,
-  autoFocus,
   register,
   error,
   className,
@@ -54,10 +46,7 @@ export function TextAreaField<TFormValues extends FieldValues>({
   return (
     <Field className="flex gap-1.5" data-invalid={!!error}>
       {label && (
-        <FieldLabel
-          htmlFor={name}
-          className={cn("text-sm font-display font-bold text-black-secondary", hideLabel && "sr-only")}
-        >
+        <FieldLabel htmlFor={name} className="text-sm font-display font-bold text-black-secondary">
           {label}
         </FieldLabel>
       )}
@@ -67,9 +56,6 @@ export function TextAreaField<TFormValues extends FieldValues>({
         rows={rows}
         placeholder={placeholder}
         disabled={disabled}
-        readOnly={readOnly}
-        // Opt-in only, for fields that should take focus when they appear after a user action.
-        autoFocus={autoFocus}
         aria-invalid={!!error}
         aria-busy={busy || undefined}
         aria-describedby={[descriptionId, errorId].filter(Boolean).join(" ") || undefined}
