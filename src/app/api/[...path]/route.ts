@@ -5,6 +5,7 @@ import { clearAccessTokenCookie, getAccessToken } from "@/modules/auth/session/a
 import {
   ANSWER_TIMEOUT_MS,
   FEEDBACK_FORWARD_TIMEOUT_MS,
+  SPEECH_FORWARD_TIMEOUT_MS,
   START_TIMEOUT_MS,
   TRANSCRIBE_FORWARD_TIMEOUT_MS,
 } from "@/modules/interviews/constants";
@@ -22,17 +23,19 @@ const REQUEST_TIMEOUT_MS = 15_000;
 const OWNED_BY_NEXT = new Set(["auth/login", "auth/register", "auth/logout"]);
 
 /**
- * POSTs where cuewise-be waits on a model (the LLM up to 30s, plus a job-description summary on start; Deepgram up to
- * 20s for a recording; two feedback LLM calls up to 60s; résumé extraction up to 20s), so the default 15s would cut
- * off requests that are still succeeding. Same budgets as the browser side (interviews and profile constants).
+ * Calls where cuewise-be waits on a model (the LLM up to 30s, plus a job-description summary on start; Deepgram up to
+ * 20s for a recording and 10s for an interviewer line; two feedback LLM calls up to 60s; résumé extraction up to 20s),
+ * so the default 15s would cut off requests that are still succeeding. Same budgets as the browser side (interviews
+ * and profile constants).
  */
-const SLOW_POSTS: { path: RegExp; timeoutMs: number }[] = [
-  { path: /^interviews\/[^/]+\/messages$/, timeoutMs: ANSWER_TIMEOUT_MS },
-  { path: /^interviews\/[^/]+\/messages\/stream$/, timeoutMs: ANSWER_TIMEOUT_MS },
-  { path: /^interviews\/[^/]+\/transcriptions$/, timeoutMs: TRANSCRIBE_FORWARD_TIMEOUT_MS },
-  { path: /^interviews\/[^/]+\/feedback$/, timeoutMs: FEEDBACK_FORWARD_TIMEOUT_MS },
-  { path: /^interviews$/, timeoutMs: START_TIMEOUT_MS },
-  { path: /^profile\/resume$/, timeoutMs: RESUME_UPLOAD_FORWARD_TIMEOUT_MS },
+const SLOW_ROUTES: { method: string; path: RegExp; timeoutMs: number }[] = [
+  { method: "POST", path: /^interviews\/[^/]+\/messages$/, timeoutMs: ANSWER_TIMEOUT_MS },
+  { method: "POST", path: /^interviews\/[^/]+\/messages\/stream$/, timeoutMs: ANSWER_TIMEOUT_MS },
+  { method: "POST", path: /^interviews\/[^/]+\/transcriptions$/, timeoutMs: TRANSCRIBE_FORWARD_TIMEOUT_MS },
+  { method: "POST", path: /^interviews\/[^/]+\/feedback$/, timeoutMs: FEEDBACK_FORWARD_TIMEOUT_MS },
+  { method: "POST", path: /^interviews$/, timeoutMs: START_TIMEOUT_MS },
+  { method: "POST", path: /^profile\/resume$/, timeoutMs: RESUME_UPLOAD_FORWARD_TIMEOUT_MS },
+  { method: "GET", path: /^interviews\/[^/]+\/(questions|messages)\/[^/]+\/speech$/, timeoutMs: SPEECH_FORWARD_TIMEOUT_MS },
 ];
 
 /** POSTs answered as Server-Sent Events: the body is passed through as it arrives, never read to the end here. */
@@ -47,8 +50,11 @@ const STREAM_HEADERS = { "Cache-Control": "no-cache, no-transform", "X-Accel-Buf
 const isStreaming = (method: string, path: string) =>
   method === "POST" && STREAMING_POSTS.some((route) => route.test(path));
 
+/** JSON and text bodies are read as text (the 401 check needs it); anything else (audio) is passed on as bytes. */
+const isTextual = (contentType: string) => /^text\/|[/+]json\b/i.test(contentType);
+
 function timeoutFor(method: string, path: string) {
-  const slow = method === "POST" ? SLOW_POSTS.find((route) => route.path.test(path)) : undefined;
+  const slow = SLOW_ROUTES.find((route) => route.method === method && route.path.test(path));
   return slow?.timeoutMs ?? REQUEST_TIMEOUT_MS;
 }
 
@@ -105,6 +111,17 @@ async function forward(request: Request, { params }: ForwardContext) {
     return new Response(upstream.body, { status: upstream.status, headers: streamHeaders });
   }
 
+  const upstreamType = upstream.headers.get("content-type");
+  if (upstreamType && !isTextual(upstreamType)) {
+    // An interviewer's spoken line (audio/mpeg, ...): bytes in, bytes out. Reading it as text would corrupt it.
+    const binaryHeaders = new Headers({ "Content-Type": upstreamType });
+    const cacheControl = upstream.headers.get("cache-control");
+    if (cacheControl) {
+      binaryHeaders.set("Cache-Control", cacheControl);
+    }
+    return new Response(await upstream.arrayBuffer(), { status: upstream.status, headers: binaryHeaders });
+  }
+
   const text = await upstream.text();
 
   if (upstream.status === 401) {
@@ -115,7 +132,6 @@ async function forward(request: Request, { params }: ForwardContext) {
   }
 
   const responseHeaders = new Headers();
-  const upstreamType = upstream.headers.get("content-type");
   if (upstreamType) {
     responseHeaders.set("Content-Type", upstreamType);
   }

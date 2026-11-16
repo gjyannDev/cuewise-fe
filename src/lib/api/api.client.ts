@@ -33,8 +33,9 @@ class ApiClient {
     return res.data;
   }
 
-  async downloadBlob(url: string): Promise<Blob> {
-    const res = await API.get<Blob>(url, { responseType: "blob" });
+  /** A binary body (audio). `config` carries the per-call timeout and abort signal; error bodies arrive decoded. */
+  async downloadBlob(url: string, config?: Pick<AxiosRequestConfig, "timeout" | "signal">): Promise<Blob> {
+    const res = await API.get<Blob>(url, { ...config, responseType: "blob" });
     return res.data;
   }
 }

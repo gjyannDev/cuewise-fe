@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ANSWER_TIMEOUT_MS } from "@/modules/interviews/constants";
+import { ANSWER_TIMEOUT_MS, SPEECH_FORWARD_TIMEOUT_MS } from "@/modules/interviews/constants";
 import { errorBody } from "@tests/helpers/axios";
 import { cookieJar } from "@tests/helpers/cookie-jar";
 import { openStream, sseFrame, streamOf } from "@tests/helpers/sse";
@@ -146,7 +146,9 @@ describe("/api/[...path] forwarder", () => {
     ["POST", ["profile", "resume"], 30_000],
     ["GET", ["profile"], 15_000],
     ["POST", ["users"], 15_000],
-  ])("gives %s %j a %i ms budget (only the LLM-backed POSTs wait longer)", async (method, path, budget) => {
+    ["GET", ["interviews", "0b7c2f4e-5d1a-4c3b-9e8f-1a2b3c4d5e6f", "questions", "9c1d2e3f-4a5b-4c6d-8e7f-0a1b2c3d4e5f", "speech"], SPEECH_FORWARD_TIMEOUT_MS],
+    ["GET", ["interviews", "0b7c2f4e-5d1a-4c3b-9e8f-1a2b3c4d5e6f", "messages", "9c1d2e3f-4a5b-4c6d-8e7f-0a1b2c3d4e5f", "speech"], SPEECH_FORWARD_TIMEOUT_MS],
+  ])("gives %s %j a %i ms budget (only the model-backed calls wait longer)", async (method, path, budget) => {
     const timeout = vi.spyOn(AbortSignal, "timeout");
     fetchMock.mockResolvedValueOnce(jsonResponse(200, {}));
     const handler = method === "POST" ? POST : GET;
@@ -286,5 +288,45 @@ describe("/api/[...path] forwarder, streamed answer turn", () => {
     expect(sentRequest().headers.get("accept")).toBe("application/json");
     expect(response.headers.get("cache-control")).toBeNull();
     expect(await response.json()).toEqual({ ok: true });
+  });
+});
+
+describe("/api/[...path] forwarder, interviewer speech (interview-room)", () => {
+  const SPEECH_PATH = ["interviews", "s-1", "questions", "q-1", "speech"];
+  // An MP3 frame header and bytes that aren't valid UTF-8: reading them as text would corrupt them.
+  const CLIP = new Uint8Array([0x49, 0x44, 0x33, 0x04, 0x00, 0xff, 0xfb, 0x90, 0x80, 0xc3, 0x28]);
+  const audioResponse = (headers: Record<string, string>) => new Response(CLIP, { status: 200, headers });
+  const speak = () => GET(new Request(`http://localhost/api/${SPEECH_PATH.join("/")}`), ctx(...SPEECH_PATH));
+
+  it("passes an audio clip through byte for byte with its type", async () => {
+    fetchMock.mockResolvedValueOnce(audioResponse({ "content-type": "audio/mpeg" }));
+
+    const response = await speak();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toBe("audio/mpeg");
+    expect(new Uint8Array(await response.arrayBuffer())).toEqual(CLIP);
+  });
+
+  it("passes the backend's cache policy on with the clip", async () => {
+    fetchMock.mockResolvedValueOnce(
+      audioResponse({ "content-type": "audio/ogg", "cache-control": "private, no-store" }),
+    );
+
+    const response = await speak();
+
+    expect(response.headers.get("content-type")).toBe("audio/ogg");
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+  });
+
+  it("still passes a JSON error from a speech route through unchanged", async () => {
+    const body = { error: { code: "SPEECH_UNAVAILABLE", message: "The interviewer's voice isn't available right now" } };
+    fetchMock.mockResolvedValueOnce(jsonResponse(503, body));
+
+    const response = await speak();
+
+    expect(response.status).toBe(503);
+    expect(response.headers.get("content-type")).toBe("application/json");
+    expect(await response.json()).toEqual(body);
   });
 });
