@@ -94,3 +94,73 @@ export function installMediaFakes(): MediaFakes {
     },
   };
 }
+
+export type AudioLevelFake = {
+  /** The amplitude (0 to 1) every analyser reads next: 0 is silence, 0.5 a clear voice. */
+  setAmplitude: (amplitude: number) => void;
+  /** Audio contexts created, so tests can check they were closed. */
+  contexts: { state: "running" | "suspended" | "closed" }[];
+  restore: () => void;
+};
+
+/**
+ * A fake Web Audio graph (`AudioContext` with a mic source and an `AnalyserNode`) for level tests. happy-dom has no
+ * Web Audio; without this fake a recorder reports levels as unsupported, which is itself a case worth testing.
+ */
+export function installAudioLevelFake(): AudioLevelFake {
+  let amplitude = 0;
+  const contexts: AudioLevelFake["contexts"] = [];
+  class FakeAudioContext {
+    state: "running" | "suspended" | "closed" = "running";
+    constructor() {
+      contexts.push(this);
+    }
+    resume = async () => undefined;
+    close = async () => {
+      this.state = "closed";
+    };
+    createMediaStreamSource = () => ({ connect: () => undefined, disconnect: () => undefined });
+    createAnalyser = () => ({
+      fftSize: 2048,
+      getFloatTimeDomainData: (buffer: Float32Array) => {
+        for (let i = 0; i < buffer.length; i += 1) buffer[i] = i % 2 ? amplitude : -amplitude;
+      },
+    });
+  }
+  const original = Object.getOwnPropertyDescriptor(globalThis, "AudioContext");
+  Object.defineProperty(globalThis, "AudioContext", { configurable: true, writable: true, value: FakeAudioContext });
+  return {
+    setAmplitude: (next) => {
+      amplitude = next;
+    },
+    contexts,
+    restore: () => {
+      if (original) Object.defineProperty(globalThis, "AudioContext", original);
+      else Reflect.deleteProperty(globalThis, "AudioContext");
+    },
+  };
+}
+
+/** A `MediaRecorder` stand-in that records one byte; `instances` counts how many were created. */
+export function fakeMediaRecorder() {
+  const instances: unknown[] = [];
+  class FakeMediaRecorder {
+    static isTypeSupported = () => true;
+    state: "inactive" | "recording" = "inactive";
+    mimeType = "audio/webm";
+    ondataavailable: ((event: { data: Blob }) => void) | null = null;
+    onstop: (() => void) | null = null;
+    constructor() {
+      instances.push(this);
+    }
+    start() {
+      this.state = "recording";
+    }
+    stop() {
+      this.state = "inactive";
+      this.ondataavailable?.({ data: new Blob(["x"]) });
+      this.onstop?.();
+    }
+  }
+  return { FakeMediaRecorder, instances };
+}

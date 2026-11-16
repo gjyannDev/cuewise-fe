@@ -45,7 +45,7 @@ src/
   lib/
     api/                       # api.client.ts (`apiClient`: the HTTP wrapper every service uses) + generic transport helpers (sse.ts: SSE frame parser)
     config/                    # axios clients, query client, api error helpers
-    media.ts                   # media kit helpers: pickRecordingFormat, deviceErrorKind, DEVICE_ERROR_MESSAGES (same import rule as hooks/media)
+    media.ts                   # media kit helpers: pickRecordingFormat, deviceErrorKind, DEVICE_ERROR_MESSAGES, mic level (rmsLevel, trackSilence, LevelSource) (same import rule as hooks/media). A live level is a `LevelSource` read with useSyncExternalStore by the meter only, never React state in the screen
     utils.ts                   # cn() and other generic helpers
   modules/
     <feature>/                 # e.g. auth/
