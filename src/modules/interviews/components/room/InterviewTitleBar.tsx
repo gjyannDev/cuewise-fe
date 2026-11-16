@@ -13,10 +13,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Progress } from "@/components/ui/progress";
 
 import { INTERVIEW_TYPE_LABELS } from "@/modules/interviews/constants";
 import type { InterviewSession } from "@/modules/interviews/types/interviews.types";
-import { formatInterviewTitle, formatQuestionCount } from "@/modules/interviews/utils/format.utils";
+import {
+  formatInterviewTitle,
+  formatQuestionCount,
+  formatQuestionPosition,
+} from "@/modules/interviews/utils/format.utils";
 import { EndInterviewDialog } from "./EndInterviewDialog";
 
 type InterviewTitleBarProps = {
@@ -29,7 +34,7 @@ type InterviewTitleBarProps = {
 
 /**
  * The interview's title bar: the interview it is, a menu with its details and End interview
- * (a rare, leaving action, one deliberate step away), and quiet progress on the right.
+ * (a rare, leaving action, one deliberate step away), and a thin progress bar on the right.
  */
 export function InterviewTitleBar({ session, mainNumber, onEnd }: InterviewTitleBarProps) {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -68,10 +73,17 @@ export function InterviewTitleBar({ session, mainNumber, onEnd }: InterviewTitle
       <div className="flex shrink-0 items-center gap-3">
         {/* The session says so, not the current profile: a deleted résumé doesn't change what this interview was. */}
         {session.use_profile && <Badge variant="outline">Résumé-aware</Badge>}
-        <p className="text-sm text-muted-foreground tabular-nums">
-          <span className="sr-only">Question </span>
-          {mainNumber} of {session.question_count}
-        </p>
+        {/* A thin bar, like a call app's: assistive technology reads "Question N of M" (AC11). shadcn's Progress keeps
+            `value` for its indicator and doesn't pass it to Radix, so the ARIA values are set here. */}
+        <Progress
+          value={(Math.min(mainNumber, session.question_count) / session.question_count) * 100}
+          aria-label="Interview progress"
+          aria-valuemin={0}
+          aria-valuemax={session.question_count}
+          aria-valuenow={mainNumber}
+          aria-valuetext={formatQuestionPosition(mainNumber, session.question_count)}
+          className="w-20 sm:w-32"
+        />
       </div>
 
       {onEnd && (

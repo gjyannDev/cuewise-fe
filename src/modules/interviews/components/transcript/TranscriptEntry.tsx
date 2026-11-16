@@ -1,8 +1,7 @@
-import { RotateCcwIcon, SendIcon, Volume2Icon } from "lucide-react";
+import { Volume2Icon } from "lucide-react";
 import type { Ref } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Kbd } from "@/components/ui/kbd";
 import { cn } from "@/lib/utils";
 
 import { InterviewerAvatar } from "@/modules/interviews/components/common/InterviewerAvatar";
@@ -18,18 +17,13 @@ type TranscriptEntryProps = {
   onReplay?: (line: InterviewerLine) => void;
   /** False while the mic is open or a send is in flight (the spec's turn table). */
   canReplay?: boolean;
-  /** The unsent answer's actions. */
-  onSend?: () => void;
-  onRerecord?: () => void;
-  canSend?: boolean;
-  /** Focus lands on Send when review starts. */
-  sendRef?: Ref<HTMLButtonElement>;
 };
 
 /**
  * One line of the interview transcript, as plain text (never HTML): the interviewer's lines are plain text beside its
  * avatar (with a replay button once saved), the candidate's answers sit in a soft bubble on the right. The transcribed
- * answer under review is that bubble marked "Not sent", with Send and Re-record, and a failed send's message under it.
+ * answer under review is that bubble marked "Not sent"; its Send and Re-record live on the room's review card, so the
+ * transcript can stay closed.
  */
 export function TranscriptEntry({
   item,
@@ -37,10 +31,6 @@ export function TranscriptEntry({
   ref,
   onReplay,
   canReplay = true,
-  onSend,
-  onRerecord,
-  canSend = true,
-  sendRef,
 }: TranscriptEntryProps) {
   if (item.role === "candidate") {
     return (
@@ -57,35 +47,9 @@ export function TranscriptEntry({
           {item.pending && <span className="sr-only"> (sending)</span>}
         </p>
         {item.unsent && (
-          <div className="flex max-w-[85%] flex-col items-end gap-2">
-            {item.fieldError && (
-              <p role="alert" className="text-sm text-destructive">
-                {item.fieldError}
-              </p>
-            )}
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <span aria-hidden className="text-xs text-muted-foreground">
-                Not sent
-              </span>
-              <Button type="button" variant="outline" size="lg" className="h-11" onClick={onRerecord}>
-                <RotateCcwIcon aria-hidden data-icon="inline-start" />
-                Re-record
-              </Button>
-              <Button
-                ref={sendRef}
-                type="button"
-                size="lg"
-                className="h-11"
-                onClick={onSend}
-                disabled={!canSend}
-                aria-keyshortcuts="Control+Enter Meta+Enter"
-              >
-                <SendIcon aria-hidden data-icon="inline-start" />
-                Send
-                <Kbd className="ml-1 hidden bg-primary-foreground/15 text-primary-foreground sm:inline-flex">Ctrl ↵</Kbd>
-              </Button>
-            </div>
-          </div>
+          <span aria-hidden className="text-xs text-muted-foreground">
+            Not sent
+          </span>
         )}
       </div>
     );

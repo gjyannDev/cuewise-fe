@@ -2,7 +2,6 @@ import { CircleCheckIcon, FlagIcon } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { focusOnMount } from "@/lib/utils";
 
 const VARIANTS = {
@@ -17,51 +16,51 @@ const VARIANTS = {
 
 type InterviewClosingCardProps = {
   variant: keyof typeof VARIANTS;
-  /** Move focus here when the card replaces the composer after a user action (not on page load). */
+  /** Move focus here when it replaces the room after a user action (not on page load). */
   autoFocus?: boolean;
-  /** Completed interviews only: the feedback page, shown as the card's main action. */
+  /** Completed interviews only: the feedback page, shown as the main action. */
   feedbackHref?: string;
   onStartNew: () => void;
 };
 
-/** Takes the composer's place once the interview is over; the conversation above stays readable. */
+/**
+ * The end of the interview, shown in the middle of the dark stage like a call app's "you left the call" screen: a large
+ * icon in an accent circle, the title and what happens next, and pill buttons. The transcript stays one toggle away.
+ */
 export function InterviewClosingCard({ variant, autoFocus = false, feedbackHref, onStartNew }: InterviewClosingCardProps) {
   const { icon: Icon, title, description } = VARIANTS[variant];
   // Ended early has no feedback (cuewise-be only scores completed interviews).
   const showFeedback = variant === "completed" && feedbackHref !== undefined;
 
   return (
-    <Card className="mt-3 shrink-0">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-3">
-          <Icon aria-hidden className="size-5 text-primary-text" />
-          <h2
-            ref={autoFocus ? focusOnMount : undefined}
-            tabIndex={-1}
-            className="font-display text-lg font-semibold outline-none"
-          >
-            {title}
-          </h2>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="max-w-prose text-sm text-muted-foreground">{description}</p>
-      </CardContent>
-      <CardFooter className="flex flex-col gap-2 sm:flex-row">
+    <div className="flex max-w-md flex-col items-center gap-5 px-2 text-center motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-300">
+      <span className="flex size-20 items-center justify-center rounded-full bg-accent ring-8 ring-accent/30 sm:size-24">
+        <Icon aria-hidden className="size-9 text-primary-text sm:size-11" />
+      </span>
+      <div className="flex flex-col gap-2">
+        <h2
+          ref={autoFocus ? focusOnMount : undefined}
+          tabIndex={-1}
+          className="font-display text-2xl font-semibold tracking-tight outline-none sm:text-3xl"
+        >
+          {title}
+        </h2>
+        <p className="text-base text-muted-foreground">{description}</p>
+      </div>
+      <div className="flex w-full flex-col items-center justify-center gap-2 sm:flex-row">
         {showFeedback && (
-          <Button asChild size="lg" className="h-11 w-full sm:w-auto">
+          <Button asChild className="h-11 w-full rounded-full px-6 sm:w-auto">
             <Link href={feedbackHref}>Get feedback</Link>
           </Button>
         )}
         <Button
-          size="lg"
           variant={showFeedback ? "outline" : "default"}
-          className="h-11 w-full sm:w-auto"
+          className="h-11 w-full rounded-full px-6 sm:w-auto"
           onClick={onStartNew}
         >
           Start a new interview
         </Button>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 }

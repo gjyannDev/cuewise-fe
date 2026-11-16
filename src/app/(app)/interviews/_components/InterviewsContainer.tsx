@@ -186,7 +186,7 @@ function SessionSkeleton() {
     <div
       aria-busy="true"
       aria-live="polite"
-      className="mx-auto flex h-[calc(100dvh-var(--app-header-height)-2*var(--app-content-py))] min-h-0 w-full max-w-6xl flex-col gap-3"
+      className="flex h-[calc(100dvh-var(--app-header-height)-2*var(--app-content-py))] min-h-0 w-full flex-col gap-3"
     >
       <span className="sr-only">Loading your interview…</span>
       <div className="flex h-11 shrink-0 items-center justify-between gap-3 pb-2">

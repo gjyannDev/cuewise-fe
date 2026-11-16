@@ -2,7 +2,7 @@
 
 import { ArrowDownIcon } from "lucide-react";
 import { useReducedMotion } from "motion/react";
-import { type Ref, useCallback, useRef } from "react";
+import { useCallback, useRef } from "react";
 import { type StickToBottomContext, useStickToBottomContext } from "use-stick-to-bottom";
 
 import { Conversation, ConversationContent } from "@/components/ai-elements/conversation";
@@ -25,11 +25,6 @@ type TranscriptPanelProps = {
   /** Replays an interviewer line (omit for no replay buttons). */
   onReplay?: (line: InterviewerLine) => void;
   canReplay?: boolean;
-  /** The unsent answer's actions (the room's review step). */
-  onSend?: () => void;
-  onRerecord?: () => void;
-  canSend?: boolean;
-  sendRef?: Ref<HTMLButtonElement>;
 };
 
 /**
@@ -44,10 +39,6 @@ export function TranscriptPanel({
   onJump,
   onReplay,
   canReplay,
-  onSend,
-  onRerecord,
-  canSend,
-  sendRef,
 }: TranscriptPanelProps) {
   const reduceMotion = useReducedMotion();
   const stickToBottom = useRef<StickToBottomContext>(null);
@@ -85,10 +76,6 @@ export function TranscriptPanel({
               total={total}
               onReplay={onReplay}
               canReplay={canReplay}
-              onSend={onSend}
-              onRerecord={onRerecord}
-              canSend={canSend}
-              sendRef={item.unsent ? sendRef : undefined}
             />
           ))}
         </div>

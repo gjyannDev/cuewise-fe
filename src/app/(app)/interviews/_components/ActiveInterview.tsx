@@ -1,7 +1,7 @@
 "use client";
 
 import { MessageSquareWarningIcon, RotateCcwIcon } from "lucide-react";
-import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import {
   feedbackStartRoute,
   MIC_CHECK_MESSAGES,
   MIC_REQUIRED_MESSAGE,
+  MIC_TEST_SECONDS,
   RECORDING_MAX_SECONDS,
   STALE_TRANSCRIPT_MESSAGE,
   TRANSCRIPT_ERROR_MESSAGE,
@@ -23,8 +24,10 @@ import {
 import { useInterviewAnswer } from "@/modules/interviews/hooks/use-interview-answer";
 import { useInterviewTurn } from "@/modules/interviews/hooks/use-interview-turn";
 import { useInterviewVoice } from "@/modules/interviews/hooks/use-interview-voice";
+import { useRoomClock } from "@/modules/interviews/hooks/use-room-clock";
+import { useRoomSidebar } from "@/modules/interviews/hooks/use-room-sidebar";
 import type { Interview, InterviewerLine, MicCheck, TranscriptItem } from "@/modules/interviews/types/interviews.types";
-import { formatInterviewTitle } from "@/modules/interviews/utils/format.utils";
+import { formatLobbySummary } from "@/modules/interviews/utils/format.utils";
 import { getInterviewStep } from "@/modules/interviews/utils/interview.utils";
 import { buildTranscriptView } from "@/modules/interviews/utils/transcript.utils";
 
@@ -83,6 +86,9 @@ function LiveInterview({
   // The turn asks for focus before React has rendered the control it means; the effect below moves it after the render.
   const focusTarget = useRef<"send" | "answer" | null>(null);
   const [micChecked, setMicChecked] = useState(false);
+  // Closed every time the room opens (the stage gets the full width); hiding the page closes it again (EC14).
+  const [transcriptOpen, setTranscriptOpen] = useState(false);
+  useLayoutEffect(() => () => setTranscriptOpen(false), []);
 
   const turn = useInterviewTurn({
     transcript: transcript ?? [],
@@ -140,12 +146,15 @@ function LiveInterview({
       ? "checking"
       : (recorder.error ?? "ready");
   const { phase } = turn.state;
+  // A live interview gets the whole page: the sidebar collapses from the lobby until it closes (AC16).
+  useRoomSidebar(phase !== "closed");
+  const clock = useRoomClock(phase !== "lobby" && phase !== "closed");
 
   if (phase === "lobby") {
     return (
       <div className="flex min-h-[calc(100dvh-var(--app-header-height)-2*var(--app-content-py))] items-center">
         <InterviewLobby
-          title={formatInterviewTitle(session)}
+          summary={formatLobbySummary(session)}
           initials={initials}
           cameraStream={camera.stream}
           cameraStarting={camera.status === "requesting"}
@@ -153,18 +162,33 @@ function LiveInterview({
           onToggleCamera={camera.toggle}
           mic={mic}
           onCheckMic={() => void checkMic()}
-          onJoin={turn.join}
+          micTest={
+            recorder.levelSupported
+              ? {
+                  listening: recorder.status === "listening",
+                  heard: recorder.heard,
+                  level: recorder.level,
+                  onTest: () => void recorder.listen(MIC_TEST_SECONDS),
+                }
+              : undefined
+          }
+          onJoin={() => {
+            // A running mic test lets go of the microphone before the room opens (EC3).
+            recorder.stopListening();
+            turn.join();
+          }}
         />
       </div>
     );
   }
 
-  let footer: ReactNode;
+  let footer: ReactNode = null;
+  let closing: ReactNode = null;
   if (!transcript) {
     footer = retryNotice(TRANSCRIPT_ERROR_MESSAGE, onRetryThread);
   } else if (phase === "closed") {
     const ended = isEnded || step.kind === "ended";
-    footer = (
+    closing = (
       <InterviewClosingCard
         variant={ended ? "ended" : "completed"}
         autoFocus
@@ -188,13 +212,26 @@ function LiveInterview({
               ? MIC_REQUIRED_MESSAGE
               : MIC_CHECK_MESSAGES[mic]
         }
-        elapsed={recorder.elapsed}
-        maxSeconds={RECORDING_MAX_SECONDS}
+        clock={clock}
         muted={turn.state.muted}
         cameraOn={camera.stream !== null}
         cameraStarting={camera.status === "requesting"}
         canEnd={phase !== "thinking"}
+        transcriptOpen={transcriptOpen}
+        onToggleTranscript={() => setTranscriptOpen((open) => !open)}
+        review={
+          turn.state.unsent === null
+            ? undefined
+            : {
+                text: turn.state.unsent,
+                fieldError: turn.state.fieldError,
+                canSend: turn.canSend,
+                onSend: turn.send,
+                onRerecord: turn.answer,
+              }
+        }
         answerRef={answerRef}
+        sendRef={sendRef}
         onAnswer={turn.answer}
         onStop={turn.stop}
         onCancel={turn.cancel}
@@ -217,15 +254,16 @@ function LiveInterview({
       thinkingLabel={answer.thinkingLabel}
       isStreaming={answer.isStreaming}
       blocked={turn.state.hint === "blocked"}
+      silent={recorder.silent}
+      recording={{ elapsed: recorder.elapsed, maxSeconds: RECORDING_MAX_SECONDS, level: recorder.level }}
       cameraStream={camera.stream}
       initials={initials}
       onReplay={turn.replay}
       canReplay={turn.canReplay}
-      onSend={turn.send}
-      onRerecord={turn.answer}
-      canSend={turn.canSend}
-      sendRef={sendRef}
+      transcriptOpen={transcriptOpen}
+      onTranscriptOpenChange={setTranscriptOpen}
       footer={footer}
+      closing={closing}
       onJump={() => answerRef.current?.focus()}
     />
   );
@@ -236,6 +274,8 @@ function FinishedInterview({ interview, transcript, onRetryThread, isEnded, onSt
   const { session } = interview;
   const ended = isEnded || getInterviewStep(interview).kind === "ended";
   const voice = useInterviewVoice(session.id);
+  // Nothing happens on the stage of a finished interview: its transcript starts open.
+  const [transcriptOpen, setTranscriptOpen] = useState(true);
 
   const replay = (line: InterviewerLine) => {
     void voice.replay(line).then((outcome) => {
@@ -250,17 +290,16 @@ function FinishedInterview({ interview, transcript, onRetryThread, isEnded, onSt
       phase="closed"
       onReplay={replay}
       canReplay
-      footer={
-        transcript ? (
-          <InterviewClosingCard
-            variant={ended ? "ended" : "completed"}
-            feedbackHref={ended ? undefined : feedbackStartRoute(session.id)}
-            onStartNew={onStartNew}
-          />
-        ) : (
-          retryNotice(TRANSCRIPT_ERROR_MESSAGE, onRetryThread)
-        )
+      transcriptOpen={transcriptOpen}
+      onTranscriptOpenChange={setTranscriptOpen}
+      closing={
+        <InterviewClosingCard
+          variant={ended ? "ended" : "completed"}
+          feedbackHref={ended ? undefined : feedbackStartRoute(session.id)}
+          onStartNew={onStartNew}
+        />
       }
+      footer={transcript ? null : retryNotice(TRANSCRIPT_ERROR_MESSAGE, onRetryThread)}
       onJump={() => {}}
     />
   );
