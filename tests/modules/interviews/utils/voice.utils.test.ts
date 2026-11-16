@@ -3,46 +3,18 @@ import { describe, expect, it } from "vitest";
 import { NoResponseError } from "@/lib/config/api.helper";
 import {
   RECORDING_FAILED_MESSAGE,
+  SPEECH_RATE_LIMITED_MESSAGE,
+  SPEECH_UNAVAILABLE_MESSAGE,
   TRANSCRIPTION_ERROR_MESSAGES,
   TRANSCRIPTION_UNAVAILABLE_MESSAGE,
 } from "@/modules/interviews/constants";
-import { appendTranscript, getTranscribeErrorResult } from "@/modules/interviews/utils/voice.utils";
+import {
+  getSpeechErrorResult,
+  getTranscribeErrorResult,
+  planSpokenLines,
+} from "@/modules/interviews/utils/voice.utils";
 import { axiosErrorWith, errorBody, networkError } from "@tests/helpers/axios";
-
-describe("appendTranscript", () => {
-  it("fills an empty box with the transcript alone", () => {
-    expect(appendTranscript("", "I'd use a queue.")).toBe("I'd use a queue.");
-  });
-
-  it("treats a box of only whitespace as empty", () => {
-    expect(appendTranscript("  \n ", "I'd use a queue.")).toBe("I'd use a queue.");
-  });
-
-  it("adds the transcript after the typed text with one space (EC7)", () => {
-    expect(appendTranscript("First, I'd profile it.", "Then I'd add a cache.")).toBe(
-      "First, I'd profile it. Then I'd add a cache.",
-    );
-  });
-
-  it("starts right after a trailing line break, without an extra space", () => {
-    expect(appendTranscript("My plan:\n", "profile, then cache.")).toBe("My plan:\nprofile, then cache.");
-  });
-
-  it("doesn't double up trailing spaces", () => {
-    expect(appendTranscript("First, I'd profile it.   ", "Then cache.")).toBe("First, I'd profile it. Then cache.");
-  });
-
-  it("trims the transcript's own edges", () => {
-    expect(appendTranscript("A.", "  B.  ")).toBe("A. B.");
-  });
-
-  it("keeps everything when the result is over the 2000-character limit (EC8)", () => {
-    const typed = "a".repeat(1500);
-    const spoken = "b".repeat(800);
-
-    expect(appendTranscript(typed, spoken)).toHaveLength(1500 + 1 + 800);
-  });
-});
+import { answerResponse, Q2, REACTION } from "@tests/helpers/interviews";
 
 const message = (text: string) => ({ kind: "message", message: text });
 
@@ -79,5 +51,47 @@ describe("getTranscribeErrorResult", () => {
     ["a non-HTTP error", new Error("zod said no")],
   ])("never shows backend text for %s", (_, error) => {
     expect(getTranscribeErrorResult(error)).toEqual(message(TRANSCRIPTION_UNAVAILABLE_MESSAGE));
+  });
+});
+
+describe("planSpokenLines", () => {
+  it("speaks the reaction, then the next question (EC10)", () => {
+    expect(planSpokenLines(answerResponse({ id: Q2, position: 2 }))).toEqual([
+      { kind: "reaction", id: REACTION.id },
+      { kind: "question", id: Q2 },
+    ]);
+  });
+
+  it("speaks only the follow-up when the turn has no reaction (EC10)", () => {
+    expect(planSpokenLines(answerResponse({ id: Q2, position: 2, question_kind: "follow_up" }, null))).toEqual([
+      { kind: "question", id: Q2 },
+    ]);
+  });
+
+  it("speaks only the final reaction when the interview completes (EC11)", () => {
+    expect(planSpokenLines(answerResponse())).toEqual([{ kind: "reaction", id: REACTION.id }]);
+  });
+});
+
+describe("getSpeechErrorResult", () => {
+  it.each([
+    ["no voice configured", axiosErrorWith(503, errorBody("SPEECH_UNAVAILABLE", "backend text"))],
+    ["a server error", axiosErrorWith(500, errorBody("INTERNAL_ERROR", "Boom"))],
+    ["a network failure", networkError()],
+    ["no response", new NoResponseError()],
+    ["a non-HTTP error", new Error("not audio")],
+  ])("shows the speech message for %s, never backend text (EC3)", (_, error) => {
+    expect(getSpeechErrorResult(error)).toEqual({ kind: "message", message: SPEECH_UNAVAILABLE_MESSAGE });
+  });
+
+  it("shows the replay limit message on 429 (EC4)", () => {
+    expect(getSpeechErrorResult(axiosErrorWith(429, errorBody("RATE_LIMITED", "x")))).toEqual({
+      kind: "message",
+      message: SPEECH_RATE_LIMITED_MESSAGE,
+    });
+  });
+
+  it("resyncs on 404: the line isn't speakable for this interview any more", () => {
+    expect(getSpeechErrorResult(axiosErrorWith(404, errorBody("NOT_FOUND", "x")))).toEqual({ kind: "resync" });
   });
 });

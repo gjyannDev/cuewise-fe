@@ -17,4 +17,8 @@ export const interviewKeys = {
   // Under detail(id): the end-of-interview feedback belongs to the interview.
   feedback: (id: string) => [...interviewKeys.detail(id), "feedback"] as const,
   generateFeedback: (id: string) => [...interviewKeys.feedback(id), "generate"] as const,
+  // Spoken interviewer lines. Deliberately NOT under detail(id): a resync invalidates detail(id), and a clip never
+  // changes once stored, so invalidating it would only make the next replay fetch (and pay for) the same audio again.
+  speech: (id: string, kind: "question" | "reaction", lineId: string) =>
+    [...interviewKeys.all, "speech", id, kind, lineId] as const,
 };

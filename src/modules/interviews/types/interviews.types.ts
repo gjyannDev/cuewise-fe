@@ -1,8 +1,9 @@
 import type { z } from "zod";
 
+import type { DeviceError } from "@/lib/media";
+
 import type { FEEDBACK_CRITERIA, HISTORY_SORT_COLUMNS, SESSION_STATUSES, SORT_DIRECTIONS } from "../constants";
 import type {
-  answerFormSchema,
   answerStreamEventSchemas,
   answerRequestSchema,
   answerResponseSchema,
@@ -43,7 +44,6 @@ export type Interview = z.infer<typeof interviewSchema>;
 export type InterviewSession = Interview["session"];
 export type InterviewQuestion = NonNullable<Interview["current_question"]>;
 
-export type AnswerFormValues = z.input<typeof answerFormSchema>;
 /** The POST /interviews/{id}/messages body. */
 export type AnswerRequest = z.output<typeof answerRequestSchema>;
 export type AnswerResponse = z.infer<typeof answerResponseSchema>;
@@ -72,9 +72,124 @@ export type Transcription = z.infer<typeof transcriptionResponseSchema>;
 
 /**
  * What to do after a failed transcription: refetch the interview (it moved on or is gone), or show `message`.
- * The typed text is never touched either way.
+ * Nothing was sent, so the room just goes back to the candidate's turn.
  */
 export type TranscribeErrorResult = { kind: "resync" } | { kind: "message"; message: string };
+
+/**
+ * One interviewer line that can be spoken: a question (main or follow-up) or a reaction, by its stored id. The kind picks
+ * the speech route (questions and reactions live in different tables in cuewise-be).
+ */
+export type InterviewerLine = { kind: "question" | "reaction"; id: string };
+
+/** What to do after a failed speech fetch: refetch the interview, or show `message` (the line stays in the transcript). */
+export type SpeechErrorResult = { kind: "resync" } | { kind: "message"; message: string };
+
+/** Where the room is in a turn (the spec's turn table). */
+export type RoomPhase =
+  | "lobby"
+  | "speaking"
+  | "your-turn"
+  | "recording"
+  | "transcribing"
+  | "review"
+  | "thinking"
+  | "closed";
+
+/** The room's turn state. Server data stays in the Query cache; this only holds what the turn needs. */
+export type RoomState = {
+  phase: RoomPhase;
+  /** Lines aren't played automatically (replay still plays). */
+  muted: boolean;
+  /** False without a usable microphone: Answer is refused with a message. */
+  micAvailable: boolean;
+  /** The transcribed answer under review; kept through a re-record until it is replaced, sent or discarded. */
+  unsent: string | null;
+  /** A failed send's field error (422), shown under the unsent answer. */
+  fieldError: string | null;
+  /** `blocked`: the browser refused automatic playback, so the room shows a quiet "tap replay" hint. */
+  hint: "blocked" | null;
+  /** The line playing now was asked for (replay): its end doesn't move focus. */
+  replaying: boolean;
+  /** The interview is complete: the final reaction is playing, then the room closes. */
+  closing: boolean;
+  /** Where the room goes when the line that is playing ends. */
+  returnTo: "your-turn" | "review" | "closed";
+};
+
+/** Everything that moves the turn on: the candidate's actions and what the devices and the backend report back. */
+export type RoomEvent =
+  | { type: "join"; current: InterviewerLine | null }
+  | { type: "speechFinished"; end: "ended" | "failed" | "blocked"; message?: string }
+  | { type: "answer" }
+  | { type: "stop" }
+  | { type: "cancel" }
+  | { type: "recorded"; recording: Blob | null; end: "stopped" | "limit" }
+  | { type: "transcribed"; text: string }
+  | { type: "transcribeFailed"; message: string | null }
+  | { type: "send" }
+  | { type: "sendFailed"; fieldError?: string }
+  | { type: "turnSaved"; lines: InterviewerLine[]; completed: boolean }
+  | { type: "resynced"; current: InterviewerLine | null }
+  | { type: "replay"; line: InterviewerLine }
+  | { type: "toggleMute" }
+  | { type: "setMicAvailable"; available: boolean }
+  | { type: "end" }
+  /** The room was left or hidden (Next keeps a hidden page's state): stop everything; coming back starts at the lobby. */
+  | { type: "leave" };
+
+/** What should happen, as plain data. The turn hook runs each one; the reducer never touches a device or the network. */
+export type RoomEffect =
+  | { type: "stopAudio" }
+  | { type: "speak"; lines: InterviewerLine[] }
+  | { type: "replay"; line: InterviewerLine }
+  | { type: "startRecording" }
+  | { type: "stopRecording" }
+  | { type: "cancelRecording" }
+  | { type: "transcribe"; recording: Blob }
+  | { type: "send"; text: string }
+  | { type: "releaseDevices" }
+  | { type: "notice"; message: string }
+  | { type: "focus"; target: "send" | "answer" };
+
+/**
+ * How a transcription ended: the text, a message to show, or nothing (it was cancelled, or the interview moved on and
+ * the screen is refetching).
+ */
+export type TranscribeResult = { kind: "text"; text: string } | { kind: "message"; message: string } | { kind: "none" };
+
+/** How spoken lines ended. `stopped`: cut short on purpose (Answer, a replay, End), so nothing follows from it. */
+export type SpeechOutcome = { end: "ended" | "stopped" | "failed" | "blocked"; message?: string };
+
+/** The lobby's microphone check: still asking, usable, not possible in this browser, or why it failed. */
+export type MicCheck = "checking" | "ready" | "unsupported" | DeviceError;
+
+/**
+ * The interviewer's voice, as the turn hook sees it. The one real port of the room: `use-interview-voice` implements it
+ * today (pre-recorded speech), and a phase-2 live voice can implement it without touching the turn logic.
+ */
+export type VoicePort = {
+  /** Unlocks playback; call inside the Join click. */
+  join: () => void;
+  /** Plays the lines in order (skipped while muted by the caller); settles when they've all played or one didn't. */
+  speakLines: (lines: InterviewerLine[]) => Promise<SpeechOutcome>;
+  /** Plays one line, muted or not: the candidate asked for it. */
+  replay: (line: InterviewerLine) => Promise<SpeechOutcome>;
+  stop: () => void;
+  transcribe: (recording: Blob, signal: AbortSignal) => Promise<TranscribeResult>;
+};
+
+/**
+ * How a send ended, for the room: saved (with the turn, so it knows what the interviewer says next), failed (with a
+ * field error to show under the unsent answer, or none: a toast already said why), resynced or recovered (the
+ * interview is being refetched), or cancelled (the screen went away).
+ */
+export type SendResult =
+  | { kind: "saved"; response: AnswerResponse }
+  | { kind: "failed"; fieldError?: string }
+  | { kind: "resync" }
+  | { kind: "recovered" }
+  | { kind: "cancelled" };
 
 /**
  * How a send ended: the backend's reply, `recovered` when a lost reply turned out to have been saved, or `cancelled`
@@ -170,21 +285,28 @@ export type InterviewListParams = {
 };
 
 /**
- * A transcript line as the thread renders it. `key` is `position:kind`, stable across refetches (ids of a just-sent
- * answer are later replaced by the stored ones) and known for a question still being streamed, so bubbles never
- * remount and the log never re-announces. `pending`: the answer being sent. `streaming`: a reaction or question of
- * the turn in progress, shown before it is saved.
+ * A transcript line as the transcript panel renders it. `key` is `position:kind`, stable across refetches (ids of a
+ * just-sent answer are later replaced by the stored ones) and known for a question still being streamed, so bubbles
+ * never remount and the log never re-announces. `pending`: the answer being sent. `streaming`: a reaction or question of
+ * the turn in progress, shown before it is saved. `unsent`: the transcribed answer under review (Send / Re-record), with
+ * the field error of a failed send, if any.
  */
-export type ThreadItem = TranscriptItem & { key: string; pending?: boolean; streaming?: boolean };
+export type TranscriptLine = TranscriptItem & {
+  key: string;
+  pending?: boolean;
+  streaming?: boolean;
+  unsent?: boolean;
+  fieldError?: string;
+};
 
-/** What the thread shows, plus what the screen derives from it. */
-export type ThreadView = {
-  items: ThreadItem[];
+/** What the transcript shows, plus what the screen derives from it. */
+export type TranscriptView = {
+  items: TranscriptLine[];
   /**
    * Main number of the last visible question: the progress shown as "N of M". A follow-up keeps its main question's
    * number, so this never exceeds `question_count` (unlike `position`, which counts follow-ups too).
    */
   mainNumber: number;
-  /** The last question without an answer, from the whole thread (even while hidden): what the composer answers. */
+  /** The last question without an answer, from the whole transcript (even while hidden): what the candidate answers next. */
   openQuestion?: TranscriptItem;
 };

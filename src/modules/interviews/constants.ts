@@ -1,3 +1,5 @@
+import type { MicCheck, RoomPhase } from "./types/interviews.types";
+
 export const INTERVIEWS_ROUTE = "/interviews";
 export const HISTORY_ROUTE = "/history";
 
@@ -19,8 +21,6 @@ export const MIN_QUESTION_COUNT = 1;
 export const MAX_QUESTION_COUNT = 10;
 export const JOB_DESCRIPTION_MAX_LENGTH = 2000;
 export const ANSWER_MAX_LENGTH = 2000;
-/** The composer shows its character counter only from here on, so it doesn't distract while writing. */
-export const ANSWER_COUNTER_FROM = 1600;
 
 /** cuewise-be's 409 codes for an answer to a question that is no longer current: the screen resyncs with GET. */
 export const RESYNC_ERROR_CODES = ["QUESTION_NOT_CURRENT", "SESSION_NOT_IN_PROGRESS"] as const;
@@ -45,8 +45,8 @@ export const THINKING_SLOW_AFTER_MS = 5000;
 /** The caption above a follow-up, where a main question shows "Question N of M". */
 export const FOLLOW_UP_CAPTION = "Follow-up";
 
-export const THREAD_ERROR_MESSAGE = "Couldn't load the conversation.";
-export const STALE_THREAD_MESSAGE = "Couldn't load the latest question.";
+export const TRANSCRIPT_ERROR_MESSAGE = "Couldn't load the conversation.";
+export const STALE_TRANSCRIPT_MESSAGE = "Couldn't load the latest question.";
 
 /**
  * The whole streamed answer turn, browser side and in the /api forwarder: cuewise-be may spend up to 30s
@@ -62,8 +62,45 @@ export const START_TIMEOUT_MS = 60_000;
  */
 export const TRANSCRIBE_FORWARD_TIMEOUT_MS = 25_000;
 export const TRANSCRIBE_TIMEOUT_MS = 30_000;
+/**
+ * Speaking an interviewer line: cuewise-be gives Deepgram Aura up to 10s (speech_total_budget_seconds; keep in step).
+ * Same layering as transcription: the forwarder waits a bit longer, the browser longer still.
+ */
+export const SPEECH_FORWARD_TIMEOUT_MS = 12_000;
+export const SPEECH_TIMEOUT_MS = 15_000;
 
-/** The composer stops a recording by itself here (cuewise-be rejects a reported duration over 125 s). */
+/** Interviewer voice problems (the spec's messages). The line itself is always in the transcript, so none is fatal. */
+export const SPEECH_UNAVAILABLE_MESSAGE = "Couldn't play the interviewer's voice. The question is in the transcript.";
+export const SPEECH_RATE_LIMITED_MESSAGE = "Too many replays. Wait a moment and try again.";
+/** The browser refused automatic playback (iOS without a fresh tap): a quiet hint, never an error toast (EC24). */
+export const SPEECH_BLOCKED_HINT = "Tap replay to hear the question.";
+/** Answer pressed without a usable microphone (EC1): the room still works, the candidate just can't answer yet. */
+export const MIC_REQUIRED_MESSAGE =
+  "Microphone access is blocked. Allow it in your browser settings to answer. You can still join and hear the questions.";
+/** The lobby's other microphone problems: none of them blocks joining (EC1). */
+export const MIC_UNAVAILABLE_MESSAGE = "Couldn't start the microphone. You can still join and hear the questions.";
+export const MIC_UNSUPPORTED_MESSAGE = "This browser can't record audio. You can still join and hear the questions.";
+/** The lobby's microphone problems, and why Answer is disabled in the room (EC1). */
+export const MIC_CHECK_MESSAGES: Record<Exclude<MicCheck, "checking" | "ready">, string> = {
+  denied: MIC_REQUIRED_MESSAGE,
+  "no-device": MIC_UNAVAILABLE_MESSAGE,
+  failed: MIC_UNAVAILABLE_MESSAGE,
+  unsupported: MIC_UNSUPPORTED_MESSAGE,
+};
+
+/** What the room's one live region announces on each turn change (spec, Accessibility); empty means stay quiet. */
+export const ROOM_STATUS_LABELS: Record<RoomPhase, string> = {
+  lobby: "",
+  speaking: "Interviewer speaking",
+  "your-turn": "Your turn",
+  recording: "Recording",
+  transcribing: "Transcribing…",
+  review: "Review your answer",
+  thinking: "Interviewer is thinking…",
+  closed: "",
+};
+
+/** A recording stops by itself here (cuewise-be rejects a reported duration over 125 s). */
 export const RECORDING_MAX_SECONDS = 120;
 
 /**
@@ -81,10 +118,7 @@ export const TRANSCRIPTION_ERROR_MESSAGES: Record<string, string> = {
   TRANSCRIPTION_UNAVAILABLE: TRANSCRIPTION_UNAVAILABLE_MESSAGE,
 };
 
-/** Shown by the composer for problems in the browser, before anything is uploaded. */
-export const MICROPHONE_BLOCKED_MESSAGE =
-  "Microphone access is blocked. Allow it in your browser settings to answer by voice.";
-export const MICROPHONE_UNAVAILABLE_MESSAGE = "Couldn't start the microphone.";
+/** Shown for recording problems before anything is uploaded (device problems: `DEVICE_ERROR_MESSAGES` in lib/media). */
 export const EMPTY_RECORDING_MESSAGE = TRANSCRIPTION_ERROR_MESSAGES.NO_SPEECH;
 export const RECORDING_LIMIT_MESSAGE = TRANSCRIPTION_ERROR_MESSAGES.AUDIO_TOO_LONG;
 

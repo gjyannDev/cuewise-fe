@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import { DEFAULT_START_VALUES, ROLE_LABELS, ROLE_OPTIONS, ROLES } from "@/modules/interviews/constants";
 import {
-  answerFormSchema,
   answerRequestSchema,
   answerResponseSchema,
   feedbackSchema,
@@ -223,17 +222,6 @@ describe("interviewSchema", () => {
   });
 });
 
-describe("answerFormSchema", () => {
-  it.each(["", "   "])("rejects an empty answer (%j)", (answer) => {
-    expect(issuesFor(answerFormSchema.safeParse({ answer }))).toEqual(["answer"]);
-  });
-
-  it("accepts 2000 characters and rejects 2001", () => {
-    expect(answerFormSchema.safeParse({ answer: "a".repeat(2000) }).success).toBe(true);
-    expect(issuesFor(answerFormSchema.safeParse({ answer: "a".repeat(2001) }))).toEqual(["answer"]);
-  });
-});
-
 describe("answerRequestSchema", () => {
   it("outputs exactly the POST /messages body with the answer trimmed", () => {
     expect(answerRequestSchema.parse({ question_id: QUESTION_ID, answer: "  I would use a queue.  ", extra: 1 })).toEqual({
@@ -244,6 +232,14 @@ describe("answerRequestSchema", () => {
 
   it.each(["", "   ", "a".repeat(2001)])("rejects an answer the backend would reject (%#)", (answer) => {
     expect(issuesFor(answerRequestSchema.safeParse({ question_id: QUESTION_ID, answer }))).toEqual(["answer"]);
+  });
+
+  it("says why an empty or too-long answer can't be sent", () => {
+    const messages = (answer: string) =>
+      answerRequestSchema.safeParse({ question_id: QUESTION_ID, answer }).error?.issues.map((issue) => issue.message);
+
+    expect(messages("   ")).toEqual(["Record an answer first"]);
+    expect(messages("a".repeat(2001))).toEqual(["Keep it under 2000 characters"]);
   });
 
   it("accepts a 2000-character answer and rejects a non-UUID question id", () => {

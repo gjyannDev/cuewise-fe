@@ -5,10 +5,10 @@ import { ApiResponseError, NoResponseError } from "@/lib/config/api.helper";
 import { INTERVIEWER_THINKING_LABELS, INTERVIEWER_WRAP_UP_LABEL } from "@/modules/interviews/constants";
 import {
   appendAnswerTurn,
-  buildThreadView,
+  buildTranscriptView,
   getAnswerErrorResult,
   pickThinkingLabel,
-} from "@/modules/interviews/utils/chat.utils";
+} from "@/modules/interviews/utils/transcript.utils";
 import { AnswerStreamError } from "@/modules/interviews/utils/stream.utils";
 import { axiosErrorWith, errorBody, networkError } from "@tests/helpers/axios";
 import { answerResponse, Q1, Q2, Q3, REACTION, transcriptItem } from "@tests/helpers/interviews";
@@ -91,16 +91,16 @@ const question1 = transcriptItem("question", Q1, 1);
 const answered = [question1, transcriptItem("answer", Q1, 1), transcriptItem("reaction", Q1, 1)];
 const keys = (items: { key: string }[]) => items.map(({ key }) => key);
 
-describe("buildThreadView", () => {
+describe("buildTranscriptView", () => {
   it("keys every item by position and kind, so a refetch that changes ids never remounts a bubble", () => {
     const refetched = answered.map((item) => ({ ...item, id: `${item.id.slice(0, -4)}ffff` }));
 
-    expect(keys(buildThreadView(answered, {}).items)).toEqual(["1:question", "1:answer", "1:reaction"]);
-    expect(keys(buildThreadView(refetched, {}).items)).toEqual(["1:question", "1:answer", "1:reaction"]);
+    expect(keys(buildTranscriptView(answered, {}).items)).toEqual(["1:question", "1:answer", "1:reaction"]);
+    expect(keys(buildTranscriptView(refetched, {}).items)).toEqual(["1:question", "1:answer", "1:reaction"]);
   });
 
   it("appends the pending answer last, as a candidate bubble keyed like the stored answer that will replace it", () => {
-    const { items } = buildThreadView([question1], { pendingAnswer: { questionId: Q1, text: "We talked it through." } });
+    const { items } = buildTranscriptView([question1], { pendingAnswer: { questionId: Q1, text: "We talked it through." } });
 
     expect(items.at(-1)).toEqual(
       expect.objectContaining({
@@ -116,7 +116,7 @@ describe("buildThreadView", () => {
   });
 
   it("drops the pending answer once the thread holds the stored one, so it never shows twice", () => {
-    const { items } = buildThreadView(answered, { pendingAnswer: { questionId: Q1, text: "We talked it through." } });
+    const { items } = buildTranscriptView(answered, { pendingAnswer: { questionId: Q1, text: "We talked it through." } });
 
     expect(items.filter(({ kind }) => kind === "answer")).toHaveLength(1);
     expect(items.some(({ pending }) => pending)).toBe(false);
@@ -125,17 +125,58 @@ describe("buildThreadView", () => {
   it("reports the unanswered last question as open", () => {
     const next = transcriptItem("question", Q2, 2);
 
-    expect(buildThreadView([...answered, next], {}).openQuestion).toEqual(next);
+    expect(buildTranscriptView([...answered, next], {}).openQuestion).toEqual(next);
+  });
+
+  it("appends the unsent answer last, marked, keyed like the answer it will become (interview-room AC3)", () => {
+    const { items } = buildTranscriptView([question1], { unsent: { questionId: Q1, text: "We split the work." } });
+
+    expect(items.at(-1)).toEqual(
+      expect.objectContaining({
+        key: "1:answer",
+        question_id: Q1,
+        role: "candidate",
+        kind: "answer",
+        text: "We split the work.",
+        unsent: true,
+      }),
+    );
+    expect(items.at(-1)?.pending).toBeUndefined();
+  });
+
+  it("attaches a send's field error to the unsent answer (EC18)", () => {
+    const { items } = buildTranscriptView([question1], {
+      unsent: { questionId: Q1, text: "We split the work.", fieldError: "Keep it under 2000 characters" },
+    });
+
+    expect(items.at(-1)?.fieldError).toBe("Keep it under 2000 characters");
+  });
+
+  it("shows only the pending answer once the unsent one is sent, never both", () => {
+    const { items } = buildTranscriptView([question1], {
+      unsent: { questionId: Q1, text: "We split the work." },
+      pendingAnswer: { questionId: Q1, text: "We split the work." },
+    });
+
+    expect(items.filter(({ kind }) => kind === "answer")).toEqual([expect.objectContaining({ pending: true })]);
+    expect(items.some(({ unsent }) => unsent)).toBe(false);
+  });
+
+  it("drops the unsent answer once the stored one is in the transcript", () => {
+    const { items } = buildTranscriptView(answered, { unsent: { questionId: Q1, text: "We split the work." } });
+
+    expect(items.filter(({ kind }) => kind === "answer")).toHaveLength(1);
+    expect(items.some(({ unsent }) => unsent)).toBe(false);
   });
 
   it("has no open question once every question is answered", () => {
-    expect(buildThreadView(answered, {}).openQuestion).toBeUndefined();
+    expect(buildTranscriptView(answered, {}).openQuestion).toBeUndefined();
   });
 
   it("without a send in progress, shows the transcript as is, with progress on the last question", () => {
     const transcript = [...answered, transcriptItem("question", Q2, 2)];
 
-    const view = buildThreadView(transcript, {});
+    const view = buildTranscriptView(transcript, {});
 
     expect(view.items).toEqual(transcript.map((item) => ({ ...item, key: `${item.position}:${item.kind}` })));
     expect(view.mainNumber).toBe(2);
@@ -145,7 +186,7 @@ describe("buildThreadView", () => {
     const pendingAnswer = { questionId: Q1, text: "We talked it through." };
 
     it("adds the reaction, then the question as it is written, after the pending answer", () => {
-      const view = buildThreadView([question1], {
+      const view = buildTranscriptView([question1], {
         pendingAnswer,
         streaming: { answered: question1, reaction: REACTION, questionText: "Tell me about " },
       });
@@ -163,13 +204,13 @@ describe("buildThreadView", () => {
     });
 
     it("captions a question streamed without a reaction as a follow-up (EC12)", () => {
-      const view = buildThreadView([question1], { pendingAnswer, streaming: { answered: question1, questionText: "Why?" } });
+      const view = buildTranscriptView([question1], { pendingAnswer, streaming: { answered: question1, questionText: "Why?" } });
 
       expect(view.items.at(-1)).toMatchObject({ key: "2:question", question_kind: "follow_up", main_number: 1 });
     });
 
     it("adds only the reaction while nothing is written, e.g. a completing answer (EC14)", () => {
-      const view = buildThreadView([question1], {
+      const view = buildTranscriptView([question1], {
         pendingAnswer,
         streaming: { answered: question1, reaction: REACTION, questionText: "" },
       });
@@ -178,7 +219,7 @@ describe("buildThreadView", () => {
     });
 
     it("keeps transient lines out of progress and the open question", () => {
-      const view = buildThreadView([question1], {
+      const view = buildTranscriptView([question1], {
         pendingAnswer,
         streaming: { answered: question1, reaction: REACTION, questionText: "Tell me" },
       });
@@ -192,7 +233,7 @@ describe("buildThreadView", () => {
         item.kind === "reaction" ? { ...item, text: "Saved wording." } : item,
       );
 
-      const view = buildThreadView(saved, {
+      const view = buildTranscriptView(saved, {
         pendingAnswer,
         streaming: { answered: question1, reaction: REACTION, questionText: "Tell me" },
       });
@@ -209,7 +250,7 @@ describe("buildThreadView", () => {
     const mainAnswered = [transcriptItem("question", Q1, 1), transcriptItem("answer", Q1, 1)];
 
     it("keeps progress on the main question while one of its follow-ups is the latest question", () => {
-      expect(buildThreadView([...mainAnswered, followUp(Q2, 2, 1)], {}).mainNumber).toBe(1);
+      expect(buildTranscriptView([...mainAnswered, followUp(Q2, 2, 1)], {}).mainNumber).toBe(1);
     });
 
     it("never reports more than the main question count, however many follow-ups there are", () => {
@@ -221,17 +262,17 @@ describe("buildThreadView", () => {
           : followUp(id, i + 1, Math.floor(i / 3) + 1),
       );
 
-      expect(buildThreadView(transcript, {}).mainNumber).toBe(5);
+      expect(buildTranscriptView(transcript, {}).mainNumber).toBe(5);
     });
 
     it("shows a main question answered without a reaction as is (nothing in place of the reaction)", () => {
       const transcript = [...mainAnswered, followUp(Q2, 2, 1)];
 
-      expect(keys(buildThreadView(transcript, {}).items)).toEqual(["1:question", "1:answer", "2:question"]);
+      expect(keys(buildTranscriptView(transcript, {}).items)).toEqual(["1:question", "1:answer", "2:question"]);
     });
 
     it("gives a pending answer to a follow-up that follow-up's kind and main number", () => {
-      const { items } = buildThreadView([...mainAnswered, followUp(Q2, 2, 1)], {
+      const { items } = buildTranscriptView([...mainAnswered, followUp(Q2, 2, 1)], {
         pendingAnswer: { questionId: Q2, text: "Token bucket." },
       });
 

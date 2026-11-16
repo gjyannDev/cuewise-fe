@@ -3,14 +3,13 @@ import { readSseStream } from "@/lib/api/sse";
 import { ApiResponseError, NoResponseError, parseApiError } from "@/lib/config/api.helper";
 import { redirectIfSessionEnded } from "@/lib/config/session-redirect";
 
-import { FEEDBACK_ERROR_CODES, FEEDBACK_TIMEOUT_MS, START_TIMEOUT_MS, TRANSCRIBE_TIMEOUT_MS } from "../constants";
+import { FEEDBACK_ERROR_CODES, FEEDBACK_TIMEOUT_MS, START_TIMEOUT_MS } from "../constants";
 import {
   answerRequestSchema,
   feedbackSchema,
   interviewListSchema,
   interviewSchema,
   jobImportResponseSchema,
-  transcriptionResponseSchema,
   transcriptSchema,
 } from "../schemas/interviews.schema";
 import type {
@@ -24,18 +23,10 @@ import type {
   JobTextRequest,
   StartInterviewRequest,
   Transcript,
-  Transcription,
 } from "../types/interviews.types";
 import { AnswerStreamError, parseAnswerStreamEvent } from "../utils/stream.utils";
 
 const TERMINAL_EVENTS = new Set<AnswerStreamEvent["event"]>(["done", "error"]);
-
-/** cuewise-be checks the declared type against the file itself; the name only makes the upload readable in logs. */
-function recordingFileName(type: string): string {
-  if (type.startsWith("audio/mp4")) return "answer.mp4";
-  if (type.startsWith("audio/ogg")) return "answer.ogg";
-  return "answer.webm";
-}
 
 async function jsonOrNull(response: Response): Promise<unknown> {
   try {
@@ -128,20 +119,6 @@ class InterviewsService {
   async messages(id: string): Promise<Transcript> {
     const data = await apiClient.get<unknown>(`${this.basePath}/${encodeURIComponent(id)}/messages`);
     return transcriptSchema.parse(data);
-  }
-
-  /**
-   * Uploads a recorded answer (the browser's own container, as recorded) and returns what was said. Nothing is saved:
-   * the text is for the candidate to review, and only becomes an answer through `answerStream`.
-   */
-  async transcribe(id: string, recording: Blob, signal?: AbortSignal): Promise<Transcription> {
-    const form = new FormData();
-    form.append("audio", recording, recordingFileName(recording.type));
-    const data = await apiClient.post<unknown>(`${this.basePath}/${encodeURIComponent(id)}/transcriptions`, form, {
-      timeout: TRANSCRIBE_TIMEOUT_MS,
-      signal,
-    });
-    return transcriptionResponseSchema.parse(data);
   }
 
   /**

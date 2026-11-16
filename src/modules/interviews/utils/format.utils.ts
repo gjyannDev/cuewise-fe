@@ -1,5 +1,12 @@
-import { FOLLOW_UP_CAPTION } from "../constants";
-import type { TranscriptItem } from "../types/interviews.types";
+import { FOLLOW_UP_CAPTION, LEVEL_LABELS, ROLE_LABELS } from "../constants";
+import type { InterviewSession, TranscriptItem } from "../types/interviews.types";
+
+/** The interview named the way you'd say it out loud ("Junior Backend interview"); the style and length live elsewhere. */
+export const formatInterviewTitle = ({ level, role }: Pick<InterviewSession, "level" | "role">) =>
+  `${LEVEL_LABELS[level]} ${ROLE_LABELS[role]} interview`;
+
+/** A recording's length as a clock ("1:05"). */
+export const formatClock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 
 /**
  * When an interview started, as a date and time in the reader's locale and time zone (both overridable, so tests are

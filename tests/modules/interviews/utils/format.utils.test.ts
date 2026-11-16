@@ -2,12 +2,32 @@ import { describe, expect, it } from "vitest";
 
 import { FOLLOW_UP_CAPTION } from "@/modules/interviews/constants";
 import {
+  formatClock,
   formatInterviewCount,
   formatInterviewDate,
+  formatInterviewTitle,
   formatProgress,
   formatQuestionCaption,
 } from "@/modules/interviews/utils/format.utils";
 import { Q2, transcriptItem } from "@tests/helpers/interviews";
+
+describe("formatInterviewTitle", () => {
+  it("names the interview the way you'd say it out loud", () => {
+    expect(formatInterviewTitle({ level: "junior", role: "backend" })).toBe("Junior Backend interview");
+    expect(formatInterviewTitle({ level: "mid", role: "fullstack" })).toBe("Mid-level Full-stack interview");
+  });
+});
+
+describe("formatClock", () => {
+  it.each([
+    [0, "0:00"],
+    [9, "0:09"],
+    [75, "1:15"],
+    [120, "2:00"],
+  ])("%i s → %s", (seconds, clock) => {
+    expect(formatClock(seconds)).toBe(clock);
+  });
+});
 
 // Intl may put a narrow no-break space before AM/PM; compare with plain spaces.
 const plain = (text: string) => text.replace(/\s/g, " ");

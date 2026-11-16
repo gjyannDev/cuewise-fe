@@ -123,16 +123,18 @@ export const interviewSchema = z.object({
   current_question: questionSchema.nullable(),
 });
 
-export const answerFormSchema = z.object({
+/**
+ * The POST /interviews/{id}/messages body: the transcribed answer the candidate chose to send. cuewise-be forbids extra
+ * keys, so unknown ones are stripped; the length rules match the backend's.
+ */
+export const answerRequestSchema = z.object({
+  question_id: z.uuid(),
   answer: z
     .string()
     .trim()
-    .min(1, "Write an answer first")
+    .min(1, "Record an answer first")
     .max(ANSWER_MAX_LENGTH, `Keep it under ${ANSWER_MAX_LENGTH} characters`),
 });
-
-/** The POST /interviews/{id}/messages body. cuewise-be forbids extra keys, so unknown ones are stripped. */
-export const answerRequestSchema = answerFormSchema.extend({ question_id: z.uuid() });
 
 /**
  * POST /interviews/{id}/messages. The reaction is a predefined acknowledgement, never an evaluation. It is null when
