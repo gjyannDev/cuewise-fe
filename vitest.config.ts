@@ -11,9 +11,11 @@ export default defineConfig({
     },
   },
   test: {
+    // Node by default (fast). A test file that needs a DOM (hooks, components) opts in on its first line with
+    // `// @vitest-environment happy-dom`; browser media APIs are faked in tests/helpers/media.ts.
     environment: "node",
     // Tests live in tests/, mirroring src/ (see CLAUDE.md > Testing).
-    include: ["tests/**/*.test.ts"],
+    include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
     clearMocks: true,
   },
 });
