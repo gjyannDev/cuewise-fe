@@ -1,13 +1,4 @@
-import {
-  BarChart3,
-  FileQuestion,
-  FileUser,
-  History,
-  LayoutDashboard,
-  MessagesSquare,
-  Settings,
-  Users,
-} from "lucide-react";
+import { FileQuestion, FileUser, History, LayoutDashboard, MessagesSquare, Users } from "lucide-react";
 
 import type { Role } from "@/modules/auth/types/auth.types";
 import type { SidebarConfig } from "@/shared/sidebar/types/sidebar.types";
@@ -41,16 +32,10 @@ const USER_SIDEBAR: SidebarConfig = {
           icon: FileUser,
           description: "Your profile from your résumé, for résumé-aware interviews.",
         },
-        { key: "progress", title: "Progress", href: "/progress", icon: BarChart3, description: "How your answers are improving." },
       ],
     },
-    {
-      key: "secondary",
-      label: "Account",
-      items: [
-        { key: "settings", title: "Settings", href: "/settings", icon: Settings, description: "Manage your account." },
-      ],
-    },
+    // Progress and Settings are hidden until their pages exist. The section stays: Sign out is added to the last one.
+    { key: "secondary", label: "Account", items: [] },
   ],
 };
 
@@ -66,11 +51,8 @@ const ADMIN_SIDEBAR: SidebarConfig = {
         { key: "questions", title: "Questions", href: "/admin/questions", icon: FileQuestion },
       ],
     },
-    {
-      key: "secondary",
-      label: "Account",
-      items: [{ key: "settings", title: "Settings", href: "/admin/settings", icon: Settings }],
-    },
+    // Settings is hidden until its page exists.
+    { key: "secondary", label: "Account", items: [] },
   ],
 };
 

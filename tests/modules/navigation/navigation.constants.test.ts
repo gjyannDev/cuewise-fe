@@ -24,9 +24,8 @@ describe("SIDEBAR_BY_ROLE", () => {
         ["AI Mock Interview", "/interviews"],
         ["History", "/history"],
         ["Résumé", "/resume"],
-        ["Progress", "/progress"],
       ],
-      [["Settings", "/settings"]],
+      [],
     ]);
   });
 
@@ -37,7 +36,7 @@ describe("SIDEBAR_BY_ROLE", () => {
         ["Users", "/admin/users"],
         ["Questions", "/admin/questions"],
       ],
-      [["Settings", "/admin/settings"]],
+      [],
     ]);
   });
 
