@@ -2,7 +2,7 @@
 
 import { RotateCcwIcon, TriangleAlertIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,6 +28,7 @@ import type {
   StartInterviewFieldErrors,
   StartInterviewRequest,
 } from "@/modules/interviews/types/interviews.types";
+import { useEndedSession } from "@/modules/interviews/hooks/use-ended-session";
 import { getStartErrorResult } from "@/modules/interviews/utils/interview.utils";
 import { useMarkProfileMissing, useProfileQuery } from "@/modules/profile/queries/profile.queries";
 
@@ -67,8 +68,7 @@ export function InterviewsContainer({
         : "available";
   // Keeps the form busy until the interview screen has actually replaced it.
   const [isNavigating, startNavigation] = useTransition();
-  // ponytail: client-only until cuewise-be can end a session; a reload shows the interview again (spec EC13).
-  const [endedSessionId, setEndedSessionId] = useState<string>();
+  const ended = useEndedSession(sessionId);
 
   const { buildCallbacks } = useMutationCallbacks({ entityName: "Interview" });
   const startCallbacks = buildCallbacks("start", "interview", {
@@ -172,8 +172,8 @@ export function InterviewsContainer({
       interview={interview.data}
       transcript={messages.data?.items}
       onRetryThread={() => messages.refetch()}
-      isEnded={endedSessionId === sessionId}
-      onEnd={() => setEndedSessionId(sessionId)}
+      isEnded={ended.isEnded}
+      onEnd={ended.end}
       onStartNew={goToSetup}
       initials={initials}
     />

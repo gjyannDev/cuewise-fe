@@ -113,6 +113,11 @@ export type RoomState = {
   replaying: boolean;
   /** The interview is complete: the final reaction is playing, then the room closes. */
   closing: boolean;
+  /**
+   * Closed by End interview, not by finishing. Ending is client-only (the session stays in progress on cuewise-be), so
+   * leaving such a room puts it back in the lobby and the interview can be resumed.
+   */
+  endedEarly: boolean;
   /** Where the room goes when the line that is playing ends. */
   returnTo: "your-turn" | "review" | "closed";
 };

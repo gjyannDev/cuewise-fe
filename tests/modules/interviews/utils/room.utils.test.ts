@@ -72,12 +72,27 @@ describe("reduceRoomTurn", () => {
       expect(effects).toEqual([{ type: "stopAudio" }, { type: "cancelRecording" }, { type: "releaseDevices" }]);
     });
 
-    it("a closed room stays closed (a return shows the closing card, never the lobby); only a replay is stopped", () => {
-      const closed = run(speaking(), { type: "end" }).state;
+    it("a room ended early goes back to the lobby: the interview is still in progress on the backend, so it can be resumed", () => {
+      const ended: RoomState = { ...run(speaking(), { type: "end" }).state, muted: true };
 
-      const { state, effects } = run(closed, { type: "leave" });
+      const { state, effects } = run(ended, { type: "leave" });
 
-      expect(state).toEqual(closed);
+      expect(state).toEqual({ ...lobby(), muted: true });
+      expect(effects).toEqual([{ type: "stopAudio" }, { type: "cancelRecording" }, { type: "releaseDevices" }]);
+    });
+
+    it("a finished room stays closed (a return shows the closing card, never the lobby); only a replay is stopped", () => {
+      const finished = run(
+        review(),
+        { type: "send" },
+        { type: "turnSaved", lines: [R1], completed: true },
+        { type: "speechFinished", end: "ended" },
+      ).state;
+      expect(finished.phase).toBe("closed");
+
+      const { state, effects } = run(finished, { type: "leave" });
+
+      expect(state).toEqual(finished);
       expect(effects).toEqual([{ type: "stopAudio" }]);
     });
 

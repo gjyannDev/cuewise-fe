@@ -26,6 +26,7 @@ export function initialRoomState({ micAvailable }: { micAvailable: boolean }): R
     hint: null,
     replaying: false,
     closing: false,
+    endedEarly: false,
     returnTo: "your-turn",
   };
 }
@@ -225,13 +226,14 @@ export function reduceRoomTurn(state: RoomState, event: RoomEvent): Result {
 
     case "end": {
       if (state.phase === "closed") return unchanged(state);
-      return close(state, [{ type: "stopAudio" }, { type: "cancelRecording" }]);
+      return close({ ...state, endedEarly: true }, [{ type: "stopAudio" }, { type: "cancelRecording" }]);
     }
 
     case "leave":
       // A finished room stays finished (a return shows the closing card); its devices are already released.
-      if (state.phase === "closed") return { state, effects: [{ type: "stopAudio" }] };
+      if (state.phase === "closed" && !state.endedEarly) return { state, effects: [{ type: "stopAudio" }] };
       // Whatever was playing, recording or unsent is gone; a return shows the lobby and speaks the question again (EC12).
+      // A room ended early comes back the same way: the interview is still in progress, so Resume resumes it.
       return {
         state: { ...initialRoomState({ micAvailable: state.micAvailable }), muted: state.muted },
         effects: [{ type: "stopAudio" }, { type: "cancelRecording" }, { type: "releaseDevices" }],
