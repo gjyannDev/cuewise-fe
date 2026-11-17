@@ -1,4 +1,4 @@
-import type { MicCheck, RoomPhase } from "./types/interviews.types";
+import type { InterviewListParams, MicCheck, RoomPhase } from "./types/interviews.types";
 
 export const INTERVIEWS_ROUTE = "/interviews";
 export const HISTORY_ROUTE = "/history";
@@ -281,6 +281,13 @@ export const SESSION_STATUS_LABELS: Record<(typeof SESSION_STATUSES)[number], st
   abandoned: "Abandoned",
 };
 
+/** The status badge's look, shared by the history table and the dashboard. */
+export const SESSION_STATUS_BADGE_VARIANTS = {
+  in_progress: "default",
+  completed: "secondary",
+  abandoned: "outline",
+} as const satisfies Record<(typeof SESSION_STATUSES)[number], "default" | "secondary" | "outline">;
+
 /** The status filter: "all" sends no `status` to the backend. */
 export const HISTORY_STATUS_ALL = "all";
 export const HISTORY_STATUS_OPTIONS = [
@@ -415,3 +422,66 @@ export const FEEDBACK_RATE_LIMIT_MESSAGE = "Too many requests. Wait a moment and
 export const INTERVIEW_NOT_FOUND_TITLE = "Interview not found";
 export const INTERVIEW_NOT_FOUND_DESCRIPTION =
   "This link doesn't match an interview on your account. It may be mistyped or belong to someone else.";
+
+// --- Dashboard (/): the user's practice at a glance, from GET /interviews, GET .../feedback and GET /profile ---
+
+/**
+ * The dashboard reads the newest interviews once, as big as the history's largest page: the hero, Total, This week and
+ * the recent list all come from it. "This week" can't see past it (GET /interviews has no date filter).
+ */
+export const DASHBOARD_SAMPLE_SIZE = HISTORY_PAGE_SIZES[HISTORY_PAGE_SIZES.length - 1];
+export const DASHBOARD_RECENT_COUNT = 5;
+
+export const DASHBOARD_RECENT_PARAMS = {
+  limit: DASHBOARD_SAMPLE_SIZE,
+  offset: 0,
+  sort_by: "created_at",
+  sort_dir: "desc",
+} as const satisfies InterviewListParams;
+
+/** Only its `total` (the Completed count) and its one row (the newest completed interview, for the feedback card). */
+export const DASHBOARD_COMPLETED_PARAMS = {
+  limit: 1,
+  offset: 0,
+  status: "completed",
+  sort_by: "created_at",
+  sort_dir: "desc",
+} as const satisfies InterviewListParams;
+
+export const DASHBOARD_COPY = {
+  hero: {
+    resumeTitle: "Continue where you left off",
+    resume: "Resume interview",
+    startTitle: "Start practising",
+    startHeadline: "Ready for your next mock interview?",
+    startDescription: "Choose a role and level, and an AI interviewer asks you questions out loud.",
+    start: "Start a mock interview",
+  },
+  metrics: {
+    title: "Your practice",
+    description: "This week counts from Monday.",
+    total: "Interviews",
+    completed: "Completed",
+    rate: "Completion rate",
+    thisWeek: "This week",
+  },
+  recent: { title: "Recent interviews", seeAll: "See all" },
+  feedback: {
+    title: "Latest feedback",
+    takeaway: "Focus next",
+    view: "View feedback",
+    lowEvidence: "There wasn't enough to score this interview.",
+    pending: {
+      none: { description: "Your last interview hasn't been scored yet.", action: "Get feedback" },
+      generating: { description: "Your feedback is being prepared.", action: "View progress" },
+      failed: { description: "We couldn't score your last interview. You can try again.", action: "Try again" },
+    },
+  },
+  resume: {
+    title: "Add your résumé",
+    description: "Upload it once and interviews can ask about your own projects and experience.",
+    action: "Upload résumé",
+  },
+  error: "Couldn't load this section.",
+  retry: "Try again",
+} as const;

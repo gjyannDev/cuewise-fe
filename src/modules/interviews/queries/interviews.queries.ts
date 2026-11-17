@@ -197,12 +197,13 @@ export function useAnswerInterviewMutation(id: string, { onEvent }: AnswerStream
 
 /**
  * The interview's stored feedback (null: none requested yet). A `generating` row is read again every few seconds until
- * it is generated or failed; nothing polls otherwise, and polling stops when the page goes away.
+ * it is generated or failed; nothing polls otherwise, and polling stops when the page goes away. Pass no id to keep it
+ * idle (the dashboard, until it knows the newest completed interview).
  */
-export function useFeedbackQuery(id: string) {
+export function useFeedbackQuery(id: string | undefined) {
   return useQuery({
-    queryKey: interviewKeys.feedback(id),
-    queryFn: () => interviewsService.getFeedback(id),
+    queryKey: interviewKeys.feedback(id ?? ""),
+    queryFn: id ? () => interviewsService.getFeedback(id) : skipToken,
     refetchInterval: (query) => (query.state.data?.status === "generating" ? FEEDBACK_POLL_MS : false),
   });
 }

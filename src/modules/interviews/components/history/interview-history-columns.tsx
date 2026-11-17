@@ -12,16 +12,11 @@ import {
   INTERVIEWS_ROUTE,
   LEVEL_LABELS,
   ROLE_LABELS,
+  SESSION_STATUS_BADGE_VARIANTS,
   SESSION_STATUS_LABELS,
 } from "@/modules/interviews/constants";
-import type { InterviewListItem, SessionStatus } from "@/modules/interviews/types/interviews.types";
+import type { InterviewListItem } from "@/modules/interviews/types/interviews.types";
 import { formatInterviewDate, formatProgress } from "@/modules/interviews/utils/format.utils";
-
-const STATUS_VARIANTS = {
-  in_progress: "default",
-  completed: "secondary",
-  abandoned: "outline",
-} as const satisfies Record<SessionStatus, "default" | "secondary" | "outline">;
 
 // Both actions share one width, so the Actions column lines up whichever a row shows.
 const ACTION_WIDTH = "w-24";
@@ -49,7 +44,7 @@ export const interviewHistoryColumns = column.columns([
   column.accessor("status", {
     header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
     cell: (info) => (
-      <Badge variant={STATUS_VARIANTS[info.getValue()]}>{SESSION_STATUS_LABELS[info.getValue()]}</Badge>
+      <Badge variant={SESSION_STATUS_BADGE_VARIANTS[info.getValue()]}>{SESSION_STATUS_LABELS[info.getValue()]}</Badge>
     ),
   }),
   column.display({
